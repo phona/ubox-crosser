@@ -1,0 +1,30 @@
+hash: c5dc45f66e80187c170cf042333c8e96dd658ad34f52f43290219c3991cf7a26
+updated: 2019-04-20T14:53:30.754818+08:00
+imports:
+- name: github.com/armon/go-socks5
+  version: e75332964ef517daa070d7c38a9466a0d687e0a5
+- name: github.com/fatih/pool
+  version: 830a0f4759206ca695bc91927303867a1ba951bc
+- name: github.com/shadowsocks/shadowsocks-go
+  version: 97a5c71f80ba5f5b3e549f14a619fe557ff4f3c9
+  subpackages:
+  - shadowsocks
+- name: github.com/Yawning/chacha20
+  version: e3b1f968fc6397b51d963fee8ec8711a47bc0ce8
+  repo: https://github.com/Yawning/chacha20
+  vcs: git
+- name: golang.org/x/crypto
+  version: ffb98f73852f696ea2bb21a617a5c4b3e067a439
+  repo: https://github.com/golang/crypto.git
+  vcs: git
+  subpackages:
+  - blowfish
+  - cast5
+  - salsa20/salsa
+- name: golang.org/x/net
+  version: 3a22650c66bd7f4fb6d1e8072ffd7b75c8a27898
+  repo: https://github.com/golang/net.git
+  vcs: git
+  subpackages:
+  - context
+testImports: []

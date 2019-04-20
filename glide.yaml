@@ -1,0 +1,16 @@
+package: .
+import:
+- package: github.com/shadowsocks/shadowsocks-go
+  version: ^1.2.1
+- package: golang.org/x/crypto
+  repo: https://github.com/golang/crypto.git
+  vcs: git
+- package: golang.org/x/net
+  repo: https://github.com/golang/net.git
+  vcs: git
+- package: github.com/Yawning/chacha20
+  repo: https://github.com/Yawning/chacha20
+  vcs: git
+- package: github.com/armon/go-socks5
+- package: github.com/fatih/pool
+  version: ^3.0.0

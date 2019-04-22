@@ -17,9 +17,9 @@ func main() {
 	var err error
 
 	flag.StringVar(&cmdConfig.Password, "k", "", "password")
-	flag.IntVar(&cmdConfig.MaxConnection, "c", 10, "how much connection will be created")
+	flag.Uint64Var(&cmdConfig.MaxConnection, "c", 10, "how much connection will be created")
 	flag.StringVar(&cmdConfig.TargetAddress, "t", "", "target server address")
-	flag.Int64Var(&cmdConfig.Timeout, "timeout", 300, "target server address")
+	flag.Uint64Var(&cmdConfig.Timeout, "timeout", 300, "target server address")
 	flag.StringVar(&cmdConfig.Method, "m", "", "encryption method, default: aes-256-cfb")
 	flag.Parse()
 
@@ -46,7 +46,7 @@ func main() {
 		os.Exit(0)
 	} else {
 		connector := crosser.NewConnector(server, cmdConfig.TargetAddress, time.Duration(cmdConfig.Timeout)*time.Second)
-		for i := 0; i < cmdConfig.MaxConnection; i++ {
+		for i := 0; i < int(cmdConfig.MaxConnection); i++ {
 			go connector.RunWithCipher(cmdConfig.Method, cmdConfig.Password)
 			//go connector.Run()
 			defer connector.Close()

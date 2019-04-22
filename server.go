@@ -11,7 +11,7 @@ type Tunnel struct {
 	connChannel chan net.Conn
 }
 
-func NewTunnel(size int) *Tunnel {
+func NewTunnel(size uint64) *Tunnel {
 	ch := make(chan net.Conn, size)
 	return &Tunnel{connChannel: ch}
 }
@@ -78,6 +78,7 @@ func (tunnel *Tunnel) OpenSouthWithCipher(address, method, password string) {
 
 func (tunnel *Tunnel) handleConnectionWithCipher(conn net.Conn, cipher *ss.Cipher) {
 	proxy := <-tunnel.connChannel
+	log.Printf("get a proxy now available size of connection is %d\n", len(tunnel.connChannel))
 	newProxy := ss.NewConn(proxy, cipher.Copy())
 	go ss.PipeThenClose(conn, newProxy)
 	go ss.PipeThenClose(newProxy, conn)

@@ -15,7 +15,7 @@ func main() {
 	var err error
 
 	flag.StringVar(&cmdConfig.Password, "k", "", "password")
-	flag.IntVar(&cmdConfig.MaxConnection, "c", 10, "how much connection will be created")
+	flag.Uint64Var(&cmdConfig.MaxConnection, "c", 10, "how much connection will be created")
 	flag.StringVar(&cmdConfig.NorthAddress, "n", "", "which port will be listened for north serve")
 	flag.StringVar(&cmdConfig.SouthAddress, "s", "", "which port will be listened for south serve")
 	flag.StringVar(&cmdConfig.Method, "m", "", "encryption method, default: aes-256-cfb")
@@ -37,7 +37,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	tunnel := crosser.NewTunnel(10)
+	tunnel := crosser.NewTunnel(cmdConfig.MaxConnection)
+	ss.Debug = true
 
 	go tunnel.OpenNorth(cmdConfig.NorthAddress)
 	go tunnel.OpenSouthWithCipher(cmdConfig.SouthAddress, cmdConfig.Method, cmdConfig.Password)

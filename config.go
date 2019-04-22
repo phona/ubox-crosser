@@ -3,8 +3,8 @@ package crosser
 type Config struct {
 	Password      string `json:"password"`
 	Method        string `json:"method"` // encryption method
-	MaxConnection int    `json:"max_connection"`
-	Timeout       int64  `json:"timeout"`
+	MaxConnection uint64 `json:"max_connection"`
+	Timeout       uint64 `json:"timeout"`
 }
 
 type ClientConfig struct {

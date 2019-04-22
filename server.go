@@ -2,7 +2,6 @@ package crosser
 
 import (
 	ss "github.com/shadowsocks/shadowsocks-go/shadowsocks"
-	"io"
 	"log"
 	"net"
 	"os"
@@ -20,13 +19,11 @@ func NewTunnel(size int) *Tunnel {
 func (tunnel *Tunnel) OpenNorth(address string) {
 	if listener, err := net.Listen("tcp", address); err != nil {
 		log.Fatalln(err)
-		os.Exit(0)
 	} else {
 		for {
 			conn, err := listener.Accept()
 			if err != nil {
 				log.Fatalln(err)
-				os.Exit(0)
 			}
 
 			tunnel.connChannel <- conn
@@ -40,7 +37,6 @@ func (tunnel *Tunnel) OpenSouth(address string) {
 		log.Fatalln(err)
 		os.Exit(0)
 	} else {
-		var proxy net.Conn
 		for {
 			conn, err := listener.Accept()
 			if err != nil {
@@ -48,20 +44,7 @@ func (tunnel *Tunnel) OpenSouth(address string) {
 				os.Exit(0)
 			}
 			log.Println("get a request from south, build a tunnel for a request that from south")
-			for {
-				proxy = <-tunnel.connChannel
-				if r, err := IsUsableConnection(proxy); err != nil || !r {
-					if err != nil {
-						log.Fatal("Get unusable connection from north connection pool")
-					}
-					proxy.Close()
-					proxy = <-tunnel.connChannel
-				} else {
-					break
-				}
-			}
-			go ss.PipeThenClose(conn, proxy)
-			go ss.PipeThenClose(proxy, conn)
+			go tunnel.handleConnection(conn)
 		}
 	}
 }
@@ -81,7 +64,6 @@ func (tunnel *Tunnel) OpenSouthWithCipher(address, method, password string) {
 		log.Fatalln(err)
 		os.Exit(0)
 	} else {
-		var proxy net.Conn
 		for {
 			conn, err := listener.Accept()
 			if err != nil {
@@ -89,30 +71,22 @@ func (tunnel *Tunnel) OpenSouthWithCipher(address, method, password string) {
 				os.Exit(0)
 			}
 			log.Println("get a request")
-			for {
-				proxy = <-tunnel.connChannel
-				if r, err := IsUsableConnection(proxy); err != nil || !r {
-					if err != nil {
-						log.Fatal("Get unusable connection from north connection pool")
-					}
-					proxy.Close()
-					proxy = <-tunnel.connChannel
-				} else {
-					break
-				}
-			}
-			newProxy := ss.NewConn(proxy, cipher.Copy())
-			go ss.PipeThenClose(conn, newProxy)
-			go ss.PipeThenClose(newProxy, conn)
+			go tunnel.handleConnectionWithCipher(conn, cipher)
 		}
 	}
 }
 
-func IsUsableConnection(c net.Conn) (bool, error) {
-	ss.SetReadTimeout(c)
-	if _, err := c.Read([]byte{}); err == io.EOF {
-		return false, err
-	} else {
-		return true, err
-	}
+func (tunnel *Tunnel) handleConnectionWithCipher(conn net.Conn, cipher *ss.Cipher) {
+	proxy := <-tunnel.connChannel
+	newProxy := ss.NewConn(proxy, cipher.Copy())
+	go ss.PipeThenClose(conn, newProxy)
+	go ss.PipeThenClose(newProxy, conn)
+	log.Println("done")
+}
+
+func (tunnel *Tunnel) handleConnection(conn net.Conn) {
+	proxy := <-tunnel.connChannel
+	go ss.PipeThenClose(conn, proxy)
+	go ss.PipeThenClose(proxy, conn)
+	log.Println("done")
 }

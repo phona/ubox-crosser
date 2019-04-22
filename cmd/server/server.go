@@ -3,11 +3,11 @@ package main
 import (
 	"flag"
 	"fmt"
+	ss "github.com/shadowsocks/shadowsocks-go/shadowsocks"
 	"log"
 	"os"
 	"sync"
-	"crosser"
-	ss "github.com/shadowsocks/shadowsocks-go/shadowsocks"
+	"ubox-crosser"
 )
 
 func main() {

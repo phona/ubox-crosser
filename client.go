@@ -12,14 +12,16 @@ import (
 type Connector struct {
 	conn         net.Conn
 	socks5Server *socks5.Server
+	timeout      time.Duration
 
 	address string
 }
 
-func NewConnector(server *socks5.Server, address string) *Connector {
+func NewConnector(server *socks5.Server, address string, timeout time.Duration) *Connector {
 	return &Connector{
 		socks5Server: server,
 		address:      address,
+		timeout:      timeout,
 	}
 }
 
@@ -31,27 +33,31 @@ func (connector *Connector) RunWithCipher(method, password string) {
 		cipher, err = ss.NewCipher(method, password)
 		if err != nil {
 			log.Printf("Error generating cipher for address: %s %v\n", connector.address, err)
-			return;
+			return
 		}
 	}
+
 	for {
-		conn, err := net.Dial("tcp", connector.address);
+		log.Printf("Establish new tcp connection to %s", connector.address)
+		conn, err := net.DialTimeout("tcp", connector.address, connector.timeout)
 		if err != nil {
 			log.Printf("Error dialing to %s: %v\n", connector.address, err)
-			time.Sleep(time.Second * 100)
+			time.Sleep(time.Second * 10)
 		}
 		newConn := ss.NewConn(conn, cipher.Copy())
 		connector.conn = newConn
 		if err := connector.socks5Server.ServeConn(newConn); err != nil {
 			log.Printf("Error sending socks5 request for connection: %s %v\n", connector.address, err)
-			time.Sleep(time.Second * 100)
+			conn.Close()
+			time.Sleep(time.Second * 10)
 		}
 	}
 }
 
 func (connector *Connector) Run() {
 	for {
-		conn, err := net.Dial("tcp", connector.address);
+		log.Printf("Establish new tcp connection to %s", connector.address)
+		conn, err := net.DialTimeout("tcp", connector.address, connector.timeout)
 		connector.conn = conn
 		if err != nil {
 			log.Printf("Error dialing to %s: %v\n", connector.address, err)
@@ -64,4 +70,3 @@ func (connector *Connector) Run() {
 func (connector *Connector) Close() {
 	connector.conn.Close()
 }
-

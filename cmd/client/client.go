@@ -4,11 +4,12 @@ import (
 	"flag"
 	"fmt"
 	"github.com/armon/go-socks5"
+	ss "github.com/shadowsocks/shadowsocks-go/shadowsocks"
 	"log"
 	"os"
 	"sync"
-	"crosser"
-	ss "github.com/shadowsocks/shadowsocks-go/shadowsocks"
+	"time"
+	"ubox-crosser"
 )
 
 func main() {
@@ -18,6 +19,7 @@ func main() {
 	flag.StringVar(&cmdConfig.Password, "k", "", "password")
 	flag.IntVar(&cmdConfig.MaxConnection, "c", 10, "how much connection will be created")
 	flag.StringVar(&cmdConfig.TargetAddress, "t", "", "target server address")
+	flag.Int64Var(&cmdConfig.Timeout, "timeout", 300, "target server address")
 	flag.StringVar(&cmdConfig.Method, "m", "", "encryption method, default: aes-256-cfb")
 	flag.Parse()
 
@@ -44,7 +46,7 @@ func main() {
 		os.Exit(0)
 	} else {
 		for i := 0; i < cmdConfig.MaxConnection; i++ {
-			connector := crosser.NewConnector(server, cmdConfig.TargetAddress)
+			connector := crosser.NewConnector(server, cmdConfig.TargetAddress, time.Duration(cmdConfig.Timeout)*time.Second)
 			go connector.RunWithCipher(cmdConfig.Method, cmdConfig.Password)
 			//go connector.Run()
 			defer connector.Close()

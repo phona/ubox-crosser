@@ -42,14 +42,14 @@ func (connector *Connector) RunWithCipher(method, password string) {
 		conn, err := net.DialTimeout("tcp", connector.address, connector.timeout)
 		if err != nil {
 			log.Printf("Error dialing to %s: %v\n", connector.address, err)
-			time.Sleep(time.Second * 10)
+			time.Sleep(time.Second * 1)
 		}
 		newConn := ss.NewConn(conn, cipher.Copy())
 		connector.conn = newConn
 		if err := connector.socks5Server.ServeConn(newConn); err != nil {
 			log.Printf("Error sending socks5 request for connection: %s %v\n", connector.address, err)
 			conn.Close()
-			time.Sleep(time.Second * 10)
+			time.Sleep(time.Second * 1)
 		}
 	}
 }

@@ -45,8 +45,8 @@ func main() {
 		fmt.Println(err)
 		os.Exit(0)
 	} else {
+		connector := crosser.NewConnector(server, cmdConfig.TargetAddress, time.Duration(cmdConfig.Timeout)*time.Second)
 		for i := 0; i < cmdConfig.MaxConnection; i++ {
-			connector := crosser.NewConnector(server, cmdConfig.TargetAddress, time.Duration(cmdConfig.Timeout)*time.Second)
 			go connector.RunWithCipher(cmdConfig.Method, cmdConfig.Password)
 			//go connector.Run()
 			defer connector.Close()

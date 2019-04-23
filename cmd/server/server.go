@@ -4,9 +4,7 @@ import (
 	"flag"
 	"fmt"
 	ss "github.com/shadowsocks/shadowsocks-go/shadowsocks"
-	"log"
 	"os"
-	"sync"
 	"ubox-crosser"
 )
 
@@ -40,11 +38,7 @@ func main() {
 	tunnel := crosser.NewTunnel(cmdConfig.MaxConnection)
 	ss.Debug = true
 
-	go tunnel.OpenNorth(cmdConfig.NorthAddress)
 	go tunnel.OpenSouthWithCipher(cmdConfig.SouthAddress, cmdConfig.Method, cmdConfig.Password)
+	tunnel.OpenNorth(cmdConfig.NorthAddress)
 	//go tunnel.OpenSouth("127.0.0.1:7000")
-	var wg sync.WaitGroup
-	wg.Add(1)
-	wg.Wait()
-	log.Println("All done")
 }

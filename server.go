@@ -77,17 +77,23 @@ func (tunnel *Tunnel) OpenSouthWithCipher(address, method, password string) {
 }
 
 func (tunnel *Tunnel) handleConnectionWithCipher(conn net.Conn, cipher *ss.Cipher) {
-	proxy := <-tunnel.connChannel
+	proxy, ok := <-tunnel.connChannel
+	if !ok {
+		log.Println("Listener for incoming connections from client closed")
+		return
+	}
 	log.Printf("get a proxy now available size of connection is %d\n", len(tunnel.connChannel))
 	newProxy := ss.NewConn(proxy, cipher.Copy())
 	go ss.PipeThenClose(conn, newProxy)
 	go ss.PipeThenClose(newProxy, conn)
-	log.Println("done")
 }
 
 func (tunnel *Tunnel) handleConnection(conn net.Conn) {
-	proxy := <-tunnel.connChannel
+	proxy, ok := <-tunnel.connChannel
+	if !ok {
+		log.Println("Listener for incoming connections from client closed")
+		return
+	}
 	go ss.PipeThenClose(conn, proxy)
 	go ss.PipeThenClose(proxy, conn)
-	log.Println("done")
 }

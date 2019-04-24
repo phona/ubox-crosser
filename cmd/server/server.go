@@ -2,15 +2,13 @@ package main
 
 import (
 	"flag"
-	"fmt"
-	ss "github.com/shadowsocks/shadowsocks-go/shadowsocks"
-	"os"
 	"ubox-crosser"
+	"ubox-crosser/log"
+	"ubox-crosser/server"
 )
 
 func main() {
 	var cmdConfig crosser.ServerConfig
-	var err error
 
 	flag.StringVar(&cmdConfig.Password, "k", "", "password")
 	flag.Uint64Var(&cmdConfig.MaxConnection, "c", 10, "how much connection will be created")
@@ -19,26 +17,32 @@ func main() {
 	flag.StringVar(&cmdConfig.Method, "m", "", "encryption method, default: aes-256-cfb")
 	flag.Parse()
 
-	if cmdConfig.NorthAddress == "" {
-		fmt.Println("north address can't be empty")
-	} else if cmdConfig.Password == "" {
-		fmt.Println("password can't be empty")
-	} else if cmdConfig.SouthAddress == "" {
-		fmt.Println("south address can't be empty")
-	}
+	log.SetLogLevel("debug")
+	proxy := server.NewProxyServer()
+	proxy.Listen(cmdConfig.SouthAddress, cmdConfig.NorthAddress)
 
-	if cmdConfig.Method == "" {
-		cmdConfig.Method = "aes-256-cfb"
-	}
-	if err = ss.CheckCipherMethod(cmdConfig.Method); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-	}
+	/*
+		if cmdConfig.NorthAddress == "" {
+			fmt.Println("north address can't be empty")
+		} else if cmdConfig.Password == "" {
+			fmt.Println("password can't be empty")
+		} else if cmdConfig.SouthAddress == "" {
+			fmt.Println("south address can't be empty")
+		}
 
-	tunnel := crosser.NewTunnel(cmdConfig.MaxConnection)
-	ss.Debug = true
+		if cmdConfig.Method == "" {
+			cmdConfig.Method = "aes-256-cfb"
+		}
+		if err = ss.CheckCipherMethod(cmdConfig.Method); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
 
-	go tunnel.OpenSouthWithCipher(cmdConfig.SouthAddress, cmdConfig.Method, cmdConfig.Password)
-	tunnel.OpenNorth(cmdConfig.NorthAddress)
-	//go tunnel.OpenSouth("127.0.0.1:7000")
+		tunnel := crosser.NewTunnel(cmdConfig.MaxConnection)
+		ss.Debug = true
+
+		go tunnel.OpenSouthWithCipher(cmdConfig.SouthAddress, cmdConfig.Method, cmdConfig.Password)
+		tunnel.OpenNorth(cmdConfig.NorthAddress)
+		//go tunnel.OpenSouth("127.0.0.1:7000")
+	*/
 }

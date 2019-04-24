@@ -8,9 +8,18 @@ import:
 - package: golang.org/x/net
   repo: https://github.com/golang/net.git
   vcs: git
+- package: golang.org/x/sys
+  repo: https://github.com/golang/sys.git
+  vcs: git
+- package: golang.org/x/text
+  repo: https://github.com/golang/text.git
+  vcs: git
 - package: github.com/Yawning/chacha20
   repo: https://github.com/Yawning/chacha20
   vcs: git
+- package: github.com/fatedier/frp
+  repo: https://github.com/fatedier/frp
+  vcs: git
 - package: github.com/armon/go-socks5
-- package: github.com/fatih/pool
-  version: ^3.0.0
+- package: github.com/Sirupsen/logrus
+  version: v1.0.3

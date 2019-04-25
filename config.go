@@ -1,10 +1,8 @@
 package crosser
 
 type Config struct {
-	Password      string `json:"password"`
-	Method        string `json:"method"` // encryption method
-	MaxConnection uint64 `json:"max_connection"`
-	Timeout       uint64 `json:"timeout"`
+	Password string `json:"password"`
+	Method   string `json:"method"` // encryption method
 }
 
 type ClientConfig struct {

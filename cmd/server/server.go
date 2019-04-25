@@ -13,13 +13,21 @@ import (
 func main() {
 	var cmdConfig crosser.ServerConfig
 
-	flag.StringVar(&cmdConfig.Password, "k", "", "password")
-	flag.Uint64Var(&cmdConfig.MaxConnection, "c", 10, "how much connection will be created")
-	flag.StringVar(&cmdConfig.NorthAddress, "n", "", "which port will be listened for north serve")
-	flag.StringVar(&cmdConfig.SouthAddress, "s", "", "which port will be listened for south serve")
-	flag.StringVar(&cmdConfig.Method, "m", "", "encryption method, default: aes-256-cfb")
+	flag.StringVar(&cmdConfig.Password, "p", "", "password")
+	flag.StringVar(&cmdConfig.NorthAddress, "cP", "", "which port will be listened for control channel")
+	flag.StringVar(&cmdConfig.SouthAddress, "eP", "", "which port will be listened for external address")
+	flag.StringVar(&cmdConfig.Method, "m", "", "encryption method")
 	flag.Parse()
 
+	if cmdConfig.NorthAddress == "" {
+		fmt.Println("control channel address can't be empty")
+	} else if cmdConfig.Method != "" && cmdConfig.Password == "" {
+		fmt.Println("password can't be empty")
+	} else if cmdConfig.SouthAddress == "" {
+		fmt.Println("external address can't be empty")
+	}
+
+	method := cmdConfig.Method
 	if cmdConfig.Method == "" {
 		cmdConfig.Method = "chacha20"
 	}
@@ -31,32 +39,10 @@ func main() {
 		os.Exit(1)
 	} else {
 		log.SetLogLevel("debug")
+		if method == "" {
+			cipher = nil
+		}
 		proxy := server.NewProxyServer(cipher)
 		proxy.Listen(cmdConfig.SouthAddress, cmdConfig.NorthAddress)
 	}
-
-	/*
-		if cmdConfig.NorthAddress == "" {
-			fmt.Println("north address can't be empty")
-		} else if cmdConfig.Password == "" {
-			fmt.Println("password can't be empty")
-		} else if cmdConfig.SouthAddress == "" {
-			fmt.Println("south address can't be empty")
-		}
-
-		if cmdConfig.Method == "" {
-			cmdConfig.Method = "aes-256-cfb"
-		}
-		if err = ss.CheckCipherMethod(cmdConfig.Method); err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
-		}
-
-		tunnel := crosser.NewTunnel(cmdConfig.MaxConnection)
-		ss.Debug = true
-
-		go tunnel.OpenSouthWithCipher(cmdConfig.SouthAddress, cmdConfig.Method, cmdConfig.Password)
-		tunnel.OpenNorth(cmdConfig.NorthAddress)
-		//go tunnel.OpenSouth("127.0.0.1:7000")
-	*/
 }

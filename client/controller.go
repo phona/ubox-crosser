@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
+	"github.com/armon/go-socks5"
 	"io"
 	"net"
 	"sync"
@@ -18,15 +19,17 @@ type Controller struct {
 	coordinator    *conn.Coordinator
 	heartBeatTimer *time.Timer
 	count          uint
+	sessionLayer   *socks5.Server
 
 	mutex sync.Mutex
 }
 
-func NewController(address string) *Controller {
+func NewController(address string, server *socks5.Server) *Controller {
 	return &Controller{
 		Address:        address,
 		coordinator:    nil,
 		heartBeatTimer: nil,
+		sessionLayer:   server,
 	}
 }
 
@@ -97,8 +100,12 @@ func (c *Controller) newWorkConn() {
 			log.Infof("Error sending work message to %s in a work connection: %s",
 				c.coordinator.Conn.RemoteAddr().String(), err)
 		} else {
-			temp, err := workConn.ReadMsg()
-			log.Info("Work connection received content ", temp, err)
+			// temp, err := workConn.ReadMsg()
+			// log.Info("Work connection received content ", temp, err)
+			log.Info("Create a new socks5 work connection")
+			if err := c.sessionLayer.ServeConn(workConn.Conn); err != nil {
+				log.Errorf("Error serving a work connection with socks5 protocol: ", err)
+			}
 		}
 	}
 }

@@ -2,6 +2,8 @@ package main
 
 import (
 	"flag"
+	"fmt"
+	"os"
 	"ubox-crosser"
 	"ubox-crosser/client"
 	"ubox-crosser/log"
@@ -19,7 +21,10 @@ func main() {
 
 	log.SetLogLevel("debug")
 	cli := client.NewClient()
-	cli.Connect(cmdConfig.TargetAddress)
+	if err := cli.Connect(cmdConfig.TargetAddress); err != nil {
+		fmt.Println(err)
+		os.Exit(0)
+	}
 
 	/*
 		if cmdConfig.TargetAddress == "" {

@@ -1,14 +1,14 @@
+SOURCES := $(shell find . -name "*.go")
+BIN_PATH := ../../bin
 export GOOS=linux
 export GOARCH=amd64
-SOURCES := $(shell find . -name "*.go")
 
-all: 
-	$(client) $(server)
+all: client server
 
 clean: 
-	rm -f $(GOPATH)/bin/client $(GOPATH)/bin/server
+	rm -f $(BIN_PATH)/linux_amd64/client $(BIN_PATH)/linux_amd64/server
 
-client: $(SOURCES) 
+client: $(SOURCES)
 	@echo "Building $@ ..."
 	cd cmd/client; go install
 

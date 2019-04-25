@@ -12,19 +12,21 @@ type ProxyServer struct {
 	// generated from client
 	listener   *net.Listener
 	controller *Controller
+
+	cipher *ss.Cipher
 }
 
-func NewProxyServer() *ProxyServer {
-	return &ProxyServer{}
+func NewProxyServer(cipher *ss.Cipher) *ProxyServer {
+	return &ProxyServer{cipher: cipher}
 }
 
 func (p *ProxyServer) Listen(southAddress, northAddress string) {
 	log.Infof("South bridge listen on %s, North bridge listen on %s", southAddress, northAddress)
-	go p.openSouth(southAddress)
-	p.openNorth(northAddress)
+	go p.serve(southAddress)
+	p.openController(northAddress)
 }
 
-func (p *ProxyServer) openSouth(address string) {
+func (p *ProxyServer) serve(address string) {
 	if listener, err := net.Listen("tcp", address); err != nil {
 		log.Fatalln(err)
 		os.Exit(0)
@@ -42,8 +44,8 @@ func (p *ProxyServer) openSouth(address string) {
 	}
 }
 
-func (p *ProxyServer) openNorth(address string) {
-	p.controller = NewController(address)
+func (p *ProxyServer) openController(address string) {
+	p.controller = NewController(address, p.cipher)
 	p.controller.Run()
 }
 

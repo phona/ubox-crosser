@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/shadowsocks/shadowsocks-go/shadowsocks"
 	"os"
 	"ubox-crosser"
 	"ubox-crosser/client"
@@ -16,14 +17,25 @@ func main() {
 	flag.Uint64Var(&cmdConfig.MaxConnection, "c", 10, "how much connection will be created")
 	flag.StringVar(&cmdConfig.TargetAddress, "t", "", "target server address")
 	flag.Uint64Var(&cmdConfig.Timeout, "timeout", 300, "target server address")
-	flag.StringVar(&cmdConfig.Method, "m", "", "encryption method, default: aes-256-cfb")
+	flag.StringVar(&cmdConfig.Method, "-m", "", "encryption method, default: aes-256-cfb")
 	flag.Parse()
 
-	log.SetLogLevel("debug")
-	cli := client.NewClient()
-	if err := cli.Connect(cmdConfig.TargetAddress); err != nil {
-		fmt.Println(err)
-		os.Exit(0)
+	if cmdConfig.Method == "" {
+		cmdConfig.Method = "aes-256-cfb"
+	}
+	if err := shadowsocks.CheckCipherMethod(cmdConfig.Method); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	} else if cipher, err := shadowsocks.NewCipher(cmdConfig.Method, cmdConfig.Password); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	} else {
+		log.SetLogLevel("debug")
+		cli := client.NewClient(cipher)
+		if err := cli.Connect(cmdConfig.TargetAddress); err != nil {
+			fmt.Println(err)
+			os.Exit(0)
+		}
 	}
 
 	/*

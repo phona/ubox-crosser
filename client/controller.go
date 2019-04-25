@@ -5,11 +5,12 @@ import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/armon/go-socks5"
+	"github.com/shadowsocks/shadowsocks-go/shadowsocks"
 	"io"
 	"net"
 	"sync"
 	"time"
-	"ubox-crosser/models"
+	"ubox-crosser/models/message"
 	"ubox-crosser/utils/conn"
 )
 
@@ -19,17 +20,20 @@ type Controller struct {
 	coordinator    *conn.Coordinator
 	heartBeatTimer *time.Timer
 	count          uint
-	sessionLayer   *socks5.Server
 
-	mutex sync.Mutex
+	// this property can be abstracted
+	sessionLayer *socks5.Server
+	cipher       *shadowsocks.Cipher
+	mutex        sync.Mutex
 }
 
-func NewController(address string, server *socks5.Server) *Controller {
+func NewController(address string, server *socks5.Server, cipher *shadowsocks.Cipher) *Controller {
 	return &Controller{
 		Address:        address,
 		coordinator:    nil,
 		heartBeatTimer: nil,
 		sessionLayer:   server,
+		cipher:         cipher,
 	}
 }
 
@@ -65,37 +69,38 @@ func (c *Controller) handleMessage() {
 			break
 		}
 
-		var message models.Message
+		var respMsg message.Message
 		if content, err := c.coordinator.ReadMsg(); err != nil {
-			log.Error("Error reading message: ", err)
-		} else if err := json.Unmarshal([]byte(content), &message); err != nil {
-			log.Error("Error unmarshal message: ", err)
+			log.Error("Error reading respMsg: ", err)
+		} else if err := json.Unmarshal([]byte(content), &respMsg); err != nil {
+			log.Error("Error unmarshal respMsg: ", err)
 		} else {
-			// distribute message to different handler
+			// distribute respMsg to different handler
 			log.Infof("Received content: %s", content)
-			switch message.Type {
-			case models.GEN_WORKER:
+			switch respMsg.Type {
+			case message.GEN_WORKER:
 				// get a generating worker request
 				// open a new tcp connection
 				go c.newWorkConn()
-			case models.HEART_BEAT:
+			case message.HEART_BEAT:
 				// a heart beat
 				log.Infof("Received a heart beat from %s", c.coordinator.Conn.RemoteAddr().String())
 			default:
-				log.Errorf("Unknown type %s, message % were received", message.Type, message.Msg)
+				log.Errorf("Unknown type %s, respMsg % were received", respMsg.Type, respMsg.Msg)
 			}
 		}
 	}
 }
 
 func (c *Controller) newWorkConn() {
-	var message models.Message
+	var reqMsg message.Message
 	if workConn, err := c.getConn(); err != nil {
 		log.Error("Error generating a worker ", err)
 	} else {
-		message.Type = models.GEN_WORKER
-		message.Msg = ""
-		buf, _ := json.Marshal(message)
+		reqMsg.Type = message.GEN_WORKER
+		reqMsg.Msg = ""
+		buf, _ := json.Marshal(reqMsg)
+		// add this connection to server workers pool
 		if err := workConn.SendMsg(string(buf)); err != nil {
 			log.Infof("Error sending work message to %s in a work connection: %s",
 				c.coordinator.Conn.RemoteAddr().String(), err)
@@ -114,7 +119,10 @@ func (c *Controller) getConn() (*conn.Coordinator, error) {
 	if rawConn, err := net.Dial("tcp", c.Address); err != nil {
 		return nil, err
 	} else {
-		return conn.AsCoordinator(rawConn, 0), nil
+		if c.cipher != nil {
+			rawConn = shadowsocks.NewConn(rawConn, c.cipher.Copy())
+		}
+		return conn.AsCoordinator(rawConn), nil
 	}
 }
 
@@ -131,7 +139,7 @@ func (c *Controller) login() error {
 		return err
 	}
 
-	reqMsg := models.Message{Type: models.LOGIN, Name: fmt.Sprintf("%p#%d", c, c.count)}
+	reqMsg := message.Message{Type: message.LOGIN, Name: fmt.Sprintf("%p#%d", c, c.count)}
 	c.count++
 	buf, _ := json.Marshal(reqMsg)
 	err = controlConn.SendMsg(string(buf))
@@ -154,10 +162,10 @@ func (c *Controller) startHeartBeat(conn *conn.Coordinator) {
 	c.heartBeatTimer = time.AfterFunc(time.Duration(HeartBeatTimeout)*time.Second, f)
 	defer c.heartBeatTimer.Stop()
 
-	reqMsg := models.Message{Type: models.HEART_BEAT}
+	reqMsg := message.Message{Type: message.HEART_BEAT}
 	buf, err := json.Marshal(reqMsg)
 	if err != nil {
-		log.Warn("Serialize clientCtlReq err! Err: %v", err)
+		log.Warn("Serialize reqMsg err! Err: %v", err)
 	}
 
 	log.Infof("Start to send heartbeat send %+v", reqMsg)
@@ -165,9 +173,9 @@ func (c *Controller) startHeartBeat(conn *conn.Coordinator) {
 		time.Sleep(time.Duration(HeartBeatInterval) * time.Second)
 		if c != nil && !conn.IsTerminate() {
 			err = conn.SendMsg(string(buf))
-			log.Info("Send hearbeat to server")
+			log.Info("Send heartbeat to server")
 			if err != nil {
-				log.Error("Send hearbeat to server failed! Err:%v", err)
+				log.Error("Send heartbeat to server failed! Err:%v", err)
 				continue
 			}
 		} else {

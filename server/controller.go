@@ -4,27 +4,30 @@ import (
 	"encoding/json"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
+	"github.com/shadowsocks/shadowsocks-go/shadowsocks"
 	"net"
 	"os"
 	"sync"
-	"ubox-crosser/models"
+	"ubox-crosser/models/message"
 	"ubox-crosser/utils/conn"
 )
 
 type Controller struct {
 	Address string
 	ctlConn *conn.Coordinator
+	cipher  *shadowsocks.Cipher
 
 	workConn chan net.Conn
 	listened bool
 	mutex    sync.Mutex
 }
 
-func NewController(address string) *Controller {
+func NewController(address string, cipher *shadowsocks.Cipher) *Controller {
 	return &Controller{
 		Address:  address,
 		ctlConn:  nil,
 		listened: false,
+		cipher:   cipher,
 		workConn: make(chan net.Conn, 10),
 	}
 }
@@ -43,7 +46,10 @@ func (c *Controller) Run() {
 		if err != nil {
 			log.Error("Error accepting new connection: ", err)
 		}
-		coordinator := conn.AsCoordinator(rawConn, 0)
+		if c.cipher != nil {
+			rawConn = shadowsocks.NewConn(rawConn, c.cipher.Copy())
+		}
+		coordinator := conn.AsCoordinator(rawConn)
 		go c.handleConnection(coordinator)
 	}
 }
@@ -53,22 +59,22 @@ func (c *Controller) GetConn() (net.Conn, error) {
 		return nil, fmt.Errorf("The controller is not running")
 	}
 
-	reqMessage := models.Message{Type: models.GEN_WORKER}
+	reqMessage := message.Message{Type: message.GEN_WORKER}
 	buf, _ := json.Marshal(reqMessage)
 	for {
 		if err := c.ctlConn.SendMsg(string(buf)); err != nil {
 			return nil, err
 		} else {
-			if c, ok := <-c.workConn; ok {
-				return c, nil
+			if rawConn, ok := <-c.workConn; ok {
+				return rawConn, nil
 			}
 		}
 	}
 }
 
 func (c *Controller) handleConnection(coordinator *conn.Coordinator) {
-	var reqMessage models.Message
-	var respMessage models.Message
+	var reqMessage message.Message
+	var respMessage message.Message
 	if content, err := coordinator.ReadMsg(); err != nil {
 		coordinator.Close()
 		log.Error("Error receiving content: ", err)
@@ -77,7 +83,7 @@ func (c *Controller) handleConnection(coordinator *conn.Coordinator) {
 	} else {
 		log.Infof("Received content: %s", content)
 		switch reqMessage.Type {
-		case models.LOGIN:
+		case message.LOGIN:
 			c.mutex.Lock()
 			if c.ctlConn != nil {
 				log.Info("Control connection was replaced by new connection")
@@ -89,7 +95,6 @@ func (c *Controller) handleConnection(coordinator *conn.Coordinator) {
 			go func() {
 				for {
 					if !c.ctlConn.IsTerminate() {
-						log.Infof("%p", c.ctlConn)
 						c.handleConnection(c.ctlConn)
 					} else {
 						break
@@ -97,14 +102,14 @@ func (c *Controller) handleConnection(coordinator *conn.Coordinator) {
 				}
 			}()
 			c.mutex.Unlock()
-		case models.HEART_BEAT:
-			respMessage.Type = models.HEART_BEAT
+		case message.HEART_BEAT:
+			respMessage.Type = message.HEART_BEAT
 			buf, _ := json.Marshal(&respMessage)
 			if err := c.ctlConn.SendMsg(string(buf)); err != nil {
 				log.Error("Error Sending heartbeat: ", err)
 			}
 			log.Debug("Received a heartbeat")
-		case models.GEN_WORKER:
+		case message.GEN_WORKER:
 			c.workConn <- coordinator.Conn
 			log.Infof("Add new work connection, now size is %d", len(c.workConn))
 		default:

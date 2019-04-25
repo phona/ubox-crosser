@@ -1,13 +1,17 @@
 package client
 
-import "github.com/armon/go-socks5"
+import (
+	"github.com/armon/go-socks5"
+	"github.com/shadowsocks/shadowsocks-go/shadowsocks"
+)
 
 type Client struct {
 	controller *Controller
+	cipher     *shadowsocks.Cipher
 }
 
-func NewClient() *Client {
-	return &Client{}
+func NewClient(cipher *shadowsocks.Cipher) *Client {
+	return &Client{cipher: cipher}
 }
 
 func (cli *Client) Connect(address string) error {
@@ -15,7 +19,7 @@ func (cli *Client) Connect(address string) error {
 	if server, err := socks5.New(conf); err != nil {
 		return err
 	} else {
-		cli.controller = NewController(address, server)
+		cli.controller = NewController(address, server, cli.cipher)
 		cli.controller.Run()
 		return nil
 	}

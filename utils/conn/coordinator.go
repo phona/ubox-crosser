@@ -4,30 +4,23 @@ import (
 	"bufio"
 	"io"
 	"net"
-	"time"
 )
 
 const sep = '\n'
 
 type Coordinator struct {
-	Name    string
-	Conn    net.Conn
-	reader  *bufio.Reader
-	Timeout time.Duration
-	closed  bool
+	Name   string
+	Conn   net.Conn
+	reader *bufio.Reader
+	closed bool
 }
 
 // TODO: add cipher in here
-func AsCoordinator(conn net.Conn, duration time.Duration) *Coordinator {
+func AsCoordinator(conn net.Conn) *Coordinator {
 	c := Coordinator{
 		Conn:   conn,
 		reader: bufio.NewReader(conn),
 		closed: false,
-	}
-	if duration == 0 {
-		c.Timeout = 30 * time.Second
-	} else {
-		c.Timeout = duration
 	}
 	return &c
 }

@@ -2,6 +2,9 @@ package main
 
 import (
 	"flag"
+	"fmt"
+	"github.com/shadowsocks/shadowsocks-go/shadowsocks"
+	"os"
 	"ubox-crosser"
 	"ubox-crosser/log"
 	"ubox-crosser/server"
@@ -17,9 +20,20 @@ func main() {
 	flag.StringVar(&cmdConfig.Method, "m", "", "encryption method, default: aes-256-cfb")
 	flag.Parse()
 
-	log.SetLogLevel("debug")
-	proxy := server.NewProxyServer()
-	proxy.Listen(cmdConfig.SouthAddress, cmdConfig.NorthAddress)
+	if cmdConfig.Method == "" {
+		cmdConfig.Method = "aes-256-cfb"
+	}
+	if err := shadowsocks.CheckCipherMethod(cmdConfig.Method); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	} else if cipher, err := shadowsocks.NewCipher(cmdConfig.Method, cmdConfig.Password); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	} else {
+		log.SetLogLevel("debug")
+		proxy := server.NewProxyServer(cipher)
+		proxy.Listen(cmdConfig.SouthAddress, cmdConfig.NorthAddress)
+	}
 
 	/*
 		if cmdConfig.NorthAddress == "" {

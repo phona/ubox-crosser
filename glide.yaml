@@ -17,9 +17,12 @@ import:
 - package: github.com/Yawning/chacha20
   repo: https://github.com/Yawning/chacha20
   vcs: git
-- package: github.com/fatedier/frp
-  repo: https://github.com/fatedier/frp
-  vcs: git
 - package: github.com/armon/go-socks5
 - package: github.com/Sirupsen/logrus
   version: v1.0.3
+- package: github.com/spf13/cobra
+  repo: https://github.com/spf13/cobra
+  vcs: git
+- package: github.com/spf13/viper
+  repo: https://github.com/spf13/viper
+  vcs: git

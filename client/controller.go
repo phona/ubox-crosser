@@ -2,7 +2,6 @@ package client
 
 import (
 	"encoding/json"
-	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/armon/go-socks5"
 	"github.com/shadowsocks/shadowsocks-go/shadowsocks"
@@ -19,7 +18,6 @@ type Controller struct {
 	Address        string
 	coordinator    *conn.Coordinator
 	heartBeatTimer *time.Timer
-	count          uint
 
 	// this property can be abstracted
 	sessionLayer *socks5.Server
@@ -97,6 +95,9 @@ func (c *Controller) newWorkConn() {
 	if workConn, err := c.getConn(); err != nil {
 		log.Error("Error generating a worker ", err)
 	} else {
+		defer func() {
+			workConn.Close()
+		}()
 		reqMsg.Type = message.GEN_WORKER
 		reqMsg.Msg = ""
 		buf, _ := json.Marshal(reqMsg)
@@ -107,7 +108,7 @@ func (c *Controller) newWorkConn() {
 		} else {
 			// temp, err := workConn.ReadMsg()
 			// log.Info("Work connection received content ", temp, err)
-			log.Info("Create a new socks5 work connection")
+			log.Infof("Create a new socks5 work connection, %s", workConn.Conn.LocalAddr())
 			if err := c.sessionLayer.ServeConn(workConn.Conn); err != nil {
 				log.Errorf("Error serving a work connection with socks5 protocol: ", err)
 			}
@@ -139,8 +140,7 @@ func (c *Controller) login() error {
 		return err
 	}
 
-	reqMsg := message.Message{Type: message.LOGIN, Name: fmt.Sprintf("%p#%d", c, c.count)}
-	c.count++
+	reqMsg := message.Message{Type: message.LOGIN}
 	buf, _ := json.Marshal(reqMsg)
 	err = controlConn.SendMsg(string(buf))
 	if err != nil {

@@ -21,7 +21,7 @@ func main() {
 	flag.Parse()
 
 	if cmdConfig.Method == "" {
-		cmdConfig.Method = "aes-256-cfb"
+		cmdConfig.Method = "chacha20"
 	}
 	if err := shadowsocks.CheckCipherMethod(cmdConfig.Method); err != nil {
 		fmt.Fprintln(os.Stderr, err)

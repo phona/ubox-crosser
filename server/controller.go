@@ -111,7 +111,7 @@ func (c *Controller) handleConnection(coordinator *conn.Coordinator) {
 			log.Debug("Received a heartbeat")
 		case message.GEN_WORKER:
 			c.workConn <- coordinator.Conn
-			log.Infof("Add new work connection, now size is %d", len(c.workConn))
+			log.Debug("Add new work connection")
 		default:
 			log.Errorf("Unknown type %s, message % were received", reqMessage.Type, reqMessage.Msg)
 		}

@@ -50,16 +50,13 @@ func (p *ProxyServer) openController(address string) {
 }
 
 func (p *ProxyServer) pipe(conn net.Conn) {
-	for {
-		workConn, err := p.controller.GetConn()
-		if err != nil {
-			log.Println("Listener for incoming connections from client closed")
-			log.Error("Error pipe:", err)
-			return
-		} else {
-			go ss.PipeThenClose(conn, workConn)
-			go ss.PipeThenClose(workConn, conn)
-			break
-		}
+	workConn, err := p.controller.GetConn()
+	log.Debugf("Pipe between request connection and work connection, %s -> %s", conn.RemoteAddr().String(), workConn.RemoteAddr().String())
+	if err != nil {
+		log.Println("Listener for incoming connections from client closed")
+		log.Error("Error pipe:", err)
+	} else {
+		go ss.PipeThenClose(conn, workConn)
+		go ss.PipeThenClose(workConn, conn)
 	}
 }

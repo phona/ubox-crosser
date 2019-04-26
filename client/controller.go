@@ -16,7 +16,7 @@ import (
 // control channel for communicate with proxy server
 type Controller struct {
 	Address        string
-	coordinator    *conn.Coordinator
+	ctlConn        *conn.Coordinator
 	heartBeatTimer *time.Timer
 
 	// this property can be abstracted
@@ -28,7 +28,7 @@ type Controller struct {
 func NewController(address string, server *socks5.Server, cipher *shadowsocks.Cipher) *Controller {
 	return &Controller{
 		Address:        address,
-		coordinator:    nil,
+		ctlConn:        nil,
 		heartBeatTimer: nil,
 		sessionLayer:   server,
 		cipher:         cipher,
@@ -39,7 +39,7 @@ func (c *Controller) Run() {
 	var sleepTime time.Duration = 1
 	var err error
 	for {
-		if c.coordinator == nil || c.coordinator.IsTerminate() || err == io.EOF {
+		if c.ctlConn == nil || c.ctlConn.IsTerminate() || err == io.EOF {
 			// login for construct a control channel
 			// always run with the control channel and do heart beat
 			log.Info("Generate a control for ", c.Address)
@@ -63,12 +63,12 @@ func (c *Controller) Run() {
 
 func (c *Controller) handleMessage() {
 	for {
-		if c.coordinator.IsTerminate() {
+		if c.ctlConn.IsTerminate() {
 			break
 		}
 
 		var respMsg message.Message
-		if content, err := c.coordinator.ReadMsg(); err != nil {
+		if content, err := c.ctlConn.ReadMsg(); err != nil {
 			log.Error("Error reading respMsg: ", err)
 		} else if err := json.Unmarshal([]byte(content), &respMsg); err != nil {
 			log.Error("Error unmarshal respMsg: ", err)
@@ -82,7 +82,7 @@ func (c *Controller) handleMessage() {
 				go c.newWorkConn()
 			case message.HEART_BEAT:
 				// a heart beat
-				log.Infof("Received a heart beat from %s", c.coordinator.Conn.RemoteAddr().String())
+				log.Infof("Received a heart beat from %s", c.ctlConn.Conn.RemoteAddr().String())
 			default:
 				log.Errorf("Unknown type %s, respMsg % were received", respMsg.Type, respMsg.Msg)
 			}
@@ -95,16 +95,13 @@ func (c *Controller) newWorkConn() {
 	if workConn, err := c.getConn(); err != nil {
 		log.Error("Error generating a worker ", err)
 	} else {
-		defer func() {
-			workConn.Close()
-		}()
+		defer workConn.Close()
 		reqMsg.Type = message.GEN_WORKER
-		reqMsg.Msg = ""
 		buf, _ := json.Marshal(reqMsg)
 		// add this connection to server workers pool
 		if err := workConn.SendMsg(string(buf)); err != nil {
 			log.Infof("Error sending work message to %s in a work connection: %s",
-				c.coordinator.Conn.RemoteAddr().String(), err)
+				c.ctlConn.Conn.RemoteAddr().String(), err)
 		} else {
 			// temp, err := workConn.ReadMsg()
 			// log.Info("Work connection received content ", temp, err)
@@ -130,10 +127,10 @@ func (c *Controller) getConn() (*conn.Coordinator, error) {
 func (c *Controller) login() error {
 	// for get a control connection
 	controlConn, err := c.getConn()
-	if c.coordinator != nil {
-		c.coordinator.Close()
+	if c.ctlConn != nil {
+		c.ctlConn.Close()
 	}
-	c.coordinator = controlConn
+	c.ctlConn = controlConn
 	log.Debug("Get new connection for login to proxy server")
 	if err != nil {
 		log.Errorf("Error getting new connection for login to proxy server: %s", err)
@@ -152,11 +149,11 @@ func (c *Controller) login() error {
 	return nil
 }
 
-func (c *Controller) startHeartBeat(conn *conn.Coordinator) {
+func (c *Controller) startHeartBeat(coordinator *conn.Coordinator) {
 	f := func() {
 		log.Error("HeartBeat timeout!")
-		if conn != nil {
-			conn.Close()
+		if coordinator != nil {
+			coordinator.Close()
 		}
 	}
 	c.heartBeatTimer = time.AfterFunc(time.Duration(HeartBeatTimeout)*time.Second, f)
@@ -171,8 +168,8 @@ func (c *Controller) startHeartBeat(conn *conn.Coordinator) {
 	log.Infof("Start to send heartbeat send %+v", reqMsg)
 	for {
 		time.Sleep(time.Duration(HeartBeatInterval) * time.Second)
-		if c != nil && !conn.IsTerminate() {
-			err = conn.SendMsg(string(buf))
+		if c != nil && !coordinator.IsTerminate() {
+			err = coordinator.SendMsg(string(buf))
 			log.Info("Send heartbeat to server")
 			if err != nil {
 				log.Error("Send heartbeat to server failed! Err:%v", err)
@@ -182,5 +179,5 @@ func (c *Controller) startHeartBeat(conn *conn.Coordinator) {
 			break
 		}
 	}
-	log.Debug("Heartbeat exit")
+	log.Info("Heartbeat exit")
 }

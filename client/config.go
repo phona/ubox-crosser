@@ -1,6 +1,6 @@
 package client
 
 var (
-	HeartBeatInterval int64 = 5
-	HeartBeatTimeout  int64 = 30
+	HeartBeatInterval int64 = 10
+	HeartBeatTimeout  int64 = 120
 )

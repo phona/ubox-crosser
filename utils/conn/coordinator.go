@@ -17,12 +17,11 @@ type Coordinator struct {
 
 // TODO: add cipher in here
 func AsCoordinator(conn net.Conn) *Coordinator {
-	c := Coordinator{
+	return &Coordinator{
 		Conn:   conn,
 		reader: bufio.NewReader(conn),
 		closed: false,
 	}
-	return &c
 }
 
 func (c *Coordinator) ReadMsg() (string, error) {

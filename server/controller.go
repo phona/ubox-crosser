@@ -76,8 +76,8 @@ func (c *Controller) handleConnection(coordinator *conn.Coordinator) {
 	var reqMessage message.Message
 	var respMessage message.Message
 	if content, err := coordinator.ReadMsg(); err != nil {
-		coordinator.Close()
 		log.Error("Error receiving content: ", err)
+		coordinator.Close()
 	} else if err := json.Unmarshal([]byte(content), &reqMessage); err != nil {
 		log.Errorf("Error Unmarshal content %s: %s", content, err)
 	} else {
@@ -91,6 +91,7 @@ func (c *Controller) handleConnection(coordinator *conn.Coordinator) {
 			}
 			// TODO: dangerous
 			c.ctlConn = coordinator
+			c.mutex.Unlock()
 			log.Debug("Setting new control connection")
 			go func() {
 				for {
@@ -101,7 +102,6 @@ func (c *Controller) handleConnection(coordinator *conn.Coordinator) {
 					}
 				}
 			}()
-			c.mutex.Unlock()
 		case message.HEART_BEAT:
 			respMessage.Type = message.HEART_BEAT
 			buf, _ := json.Marshal(&respMessage)

@@ -36,7 +36,7 @@ func (p *ProxyServer) serve(address string) {
 			rawConn, err := listener.Accept()
 			if err != nil {
 				log.Fatalln(err)
-				os.Exit(0)
+				continue
 			}
 			log.Info("get a new request")
 			go p.pipe(rawConn)
@@ -57,6 +57,6 @@ func (p *ProxyServer) pipe(conn net.Conn) {
 		log.Error("Error pipe:", err)
 	} else {
 		go ss.PipeThenClose(conn, workConn)
-		go ss.PipeThenClose(workConn, conn)
+		ss.PipeThenClose(workConn, conn)
 	}
 }

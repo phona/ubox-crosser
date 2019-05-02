@@ -32,7 +32,7 @@ func main() {
 				fmt.Fprintln(os.Stderr, err)
 				os.Exit(1)
 			} else {
-				log.SetLogLevel("debug")
+				log.InitLog(cmdConfig.LogFile, cmdConfig.LogLevel)
 				if method == "" {
 					cipher = nil
 				}

@@ -9,14 +9,14 @@ func init() {
 	log.SetLevel(log.DebugLevel)
 }
 
-func InitLog(logWay string, logFile string, logLevel string) {
-	SetLogFile(logWay, logFile)
+func InitLog(logFile string, logLevel string) {
+	SetLogFile(logFile)
 	SetLogLevel(logLevel)
 }
 
 // logWay: such as file or console
-func SetLogFile(logWay string, logFile string) {
-	if logWay == "console" {
+func SetLogFile(logFile string) {
+	if logFile == "" {
 		log.SetOutput(os.Stdout)
 	} else {
 		f, e := os.OpenFile(logFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)

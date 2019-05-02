@@ -34,6 +34,7 @@ func main() {
 				fmt.Fprintln(os.Stderr, err)
 				os.Exit(1)
 			} else {
+				log.InitLog(cmdConfig.LogFile, cmdConfig.LogLevel)
 				log.SetLogLevel("debug")
 				if method == "" {
 					cipher = nil
@@ -49,6 +50,7 @@ func main() {
 	cmd.Flags().StringVarP(&cmdConfig.Method, "method", "m", "", "encryption method")
 	cmd.Flags().StringVarP(&cmdConfig.LoginPassword, "login-password", "p", "", "root password for client login")
 	cmd.Flags().StringVar(&cmdConfig.LogFile, "log-file", "", "log file path")
+	cmd.Flags().StringVar(&cmdConfig.LogLevel, "log-Level", "debug", "log file path")
 	cmd.Flags().StringVar(&cmdConfig.ConfigFile, "config-file", "", "config file path")
 	if err := cmd.Execute(); err != nil {
 		fmt.Println(err)

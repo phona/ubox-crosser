@@ -9,26 +9,25 @@ import (
 	"os"
 	"sync"
 	"ubox-crosser/models/message"
-	"ubox-crosser/utils/conn"
+	"ubox-crosser/utils/connector"
 )
 
 type Controller struct {
 	Address string
-	ctlConn *conn.Coordinator
 	cipher  *shadowsocks.Cipher
 
-	workConn chan net.Conn
-	listened bool
-	mutex    sync.Mutex
+	ctlConn   *connector.Coordinator
+	workConn  chan net.Conn
+	mutex     sync.Mutex
+	LoginPass string
 }
 
-func NewController(address string, cipher *shadowsocks.Cipher) *Controller {
+func NewController(address, loginPass string, cipher *shadowsocks.Cipher) *Controller {
 	return &Controller{
-		Address:  address,
-		ctlConn:  nil,
-		listened: false,
-		cipher:   cipher,
-		workConn: make(chan net.Conn, 10),
+		Address:   address,
+		cipher:    cipher,
+		LoginPass: loginPass,
+		workConn:  make(chan net.Conn, 10),
 	}
 }
 
@@ -49,7 +48,7 @@ func (c *Controller) Run() {
 		if c.cipher != nil {
 			rawConn = shadowsocks.NewConn(rawConn, c.cipher.Copy())
 		}
-		coordinator := conn.AsCoordinator(rawConn)
+		coordinator := connector.AsCoordinator(rawConn)
 		go c.handleConnection(coordinator)
 	}
 }
@@ -72,43 +71,62 @@ func (c *Controller) GetConn() (net.Conn, error) {
 	}
 }
 
-func (c *Controller) handleConnection(coordinator *conn.Coordinator) {
+func (c *Controller) login(reqMsg message.Message, coordinator *connector.Coordinator) {
+	if reqMsg.Password != c.LoginPass {
+		log.Errorf("Invalid login password for user %s: %+v", reqMsg.Name, reqMsg)
+		return
+	}
+	if reqMsg.Name == "" {
+		log.Errorf("Username can't be empty when login to server: %+v", reqMsg)
+		return
+	}
+	c.mutex.Lock()
+	if c.ctlConn != nil {
+		c.ctlConn.Close()
+	}
+	c.ctlConn = coordinator
+	c.mutex.Unlock()
+	go c.daemonize(coordinator)
+}
+
+func (c *Controller) daemonize(coordinator *connector.Coordinator) {
+	// a connected control connection only can receive a heartbeat
+	var reqMsg message.Message
+	for {
+		if coordinator.IsTerminate() {
+			break
+		} else if content, err := coordinator.ReadMsg(); err != nil {
+			log.Error("Error receiving content in daemonize: ", err)
+		} else if err := json.Unmarshal([]byte(content), &reqMsg); err != nil {
+			log.Errorf("Error Unmarshal content in daemonize %s: %s", content, err)
+		} else {
+			switch reqMsg.Type {
+			case message.HEART_BEAT:
+				if buf, err := json.Marshal(reqMsg); err != nil {
+					log.Error("Error Sending heartbeat: ", err)
+				} else if err := coordinator.SendMsg(string(buf)); err != nil {
+					log.Error("Error Sending heartbeat: ", err)
+				}
+				log.Debug("Received a heartbeat")
+			default:
+				log.Errorf("Unknown type %s, message % were received", reqMsg.Type, reqMsg.Msg)
+			}
+		}
+	}
+}
+
+func (c *Controller) handleConnection(coordinator *connector.Coordinator) {
 	var reqMessage message.Message
-	var respMessage message.Message
 	if content, err := coordinator.ReadMsg(); err != nil {
 		log.Error("Error receiving content: ", err)
 		coordinator.Close()
 	} else if err := json.Unmarshal([]byte(content), &reqMessage); err != nil {
 		log.Errorf("Error Unmarshal content %s: %s", content, err)
 	} else {
-		log.Infof("Received content: %s", content)
+		log.Debugf("Received content: %s", content)
 		switch reqMessage.Type {
 		case message.LOGIN:
-			c.mutex.Lock()
-			if c.ctlConn != nil {
-				log.Info("Control connection was replaced by new connection")
-				c.ctlConn.Close()
-			}
-			// TODO: dangerous
-			c.ctlConn = coordinator
-			c.mutex.Unlock()
-			log.Debug("Setting new control connection")
-			go func() {
-				for {
-					if !c.ctlConn.IsTerminate() {
-						c.handleConnection(c.ctlConn)
-					} else {
-						break
-					}
-				}
-			}()
-		case message.HEART_BEAT:
-			respMessage.Type = message.HEART_BEAT
-			buf, _ := json.Marshal(&respMessage)
-			if err := c.ctlConn.SendMsg(string(buf)); err != nil {
-				log.Error("Error Sending heartbeat: ", err)
-			}
-			log.Debug("Received a heartbeat")
+			go c.login(reqMessage, coordinator)
 		case message.GEN_WORKER:
 			c.workConn <- coordinator.Conn
 			log.Debug("Add new work connection")

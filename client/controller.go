@@ -10,14 +10,21 @@ import (
 	"sync"
 	"time"
 	"ubox-crosser/models/message"
-	"ubox-crosser/utils/conn"
+	"ubox-crosser/utils/connector"
+)
+
+var (
+	HeartBeatInterval int64 = 5
+	HeartBeatTimeout  int64 = 30
 )
 
 // control channel for communicate with proxy server
 type Controller struct {
 	Address        string
-	ctlConn        *conn.Coordinator
+	ctlConn        *connector.Coordinator
 	heartBeatTimer *time.Timer
+
+	Name, Username, Password string
 
 	// this property can be abstracted
 	sessionLayer *socks5.Server
@@ -25,13 +32,17 @@ type Controller struct {
 	mutex        sync.Mutex
 }
 
-func NewController(address string, server *socks5.Server, cipher *shadowsocks.Cipher) *Controller {
+func NewController(address string, server *socks5.Server, cipher *shadowsocks.Cipher,
+	name, username, password string) *Controller {
 	return &Controller{
 		Address:        address,
 		ctlConn:        nil,
 		heartBeatTimer: nil,
 		sessionLayer:   server,
 		cipher:         cipher,
+		Name:           name,
+		Username:       username,
+		Password:       password,
 	}
 }
 
@@ -72,6 +83,7 @@ func (c *Controller) handleMessage() {
 			log.Error("Error reading respMsg: ", err)
 		} else if err := json.Unmarshal([]byte(content), &respMsg); err != nil {
 			log.Error("Error unmarshal respMsg: ", err)
+			log.Error(content)
 		} else {
 			// distribute respMsg to different handler
 			log.Infof("Received content: %s", content)
@@ -113,31 +125,33 @@ func (c *Controller) newWorkConn() {
 	}
 }
 
-func (c *Controller) getConn() (*conn.Coordinator, error) {
+func (c *Controller) getConn() (*connector.Coordinator, error) {
 	if rawConn, err := net.Dial("tcp", c.Address); err != nil {
 		return nil, err
 	} else {
 		if c.cipher != nil {
 			rawConn = shadowsocks.NewConn(rawConn, c.cipher.Copy())
 		}
-		return conn.AsCoordinator(rawConn), nil
+		return connector.AsCoordinator(rawConn), nil
 	}
 }
 
 func (c *Controller) login() error {
 	// for get a control connection
 	controlConn, err := c.getConn()
+	c.mutex.Lock()
 	if c.ctlConn != nil {
 		c.ctlConn.Close()
 	}
 	c.ctlConn = controlConn
+	c.mutex.Unlock()
 	log.Debug("Get new connection for login to proxy server")
 	if err != nil {
 		log.Errorf("Error getting new connection for login to proxy server: %s", err)
 		return err
 	}
 
-	reqMsg := message.Message{Type: message.LOGIN}
+	reqMsg := message.Message{Type: message.LOGIN, Name: c.Name, Password: c.Password}
 	buf, _ := json.Marshal(reqMsg)
 	err = controlConn.SendMsg(string(buf))
 	if err != nil {
@@ -149,7 +163,7 @@ func (c *Controller) login() error {
 	return nil
 }
 
-func (c *Controller) startHeartBeat(coordinator *conn.Coordinator) {
+func (c *Controller) startHeartBeat(coordinator *connector.Coordinator) {
 	f := func() {
 		log.Error("HeartBeat timeout!")
 		if coordinator != nil {

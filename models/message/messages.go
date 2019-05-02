@@ -7,7 +7,8 @@ const (
 )
 
 type Message struct {
-	Type int64  `json:"type"`
-	Msg  string `json:"msg"`
-	Name string `json:"name"`
+	Type     int64  `json:"type"`
+	Msg      string `json:"msg"`
+	Name     string `json:"name"`
+	Password string `json:"password"`
 }

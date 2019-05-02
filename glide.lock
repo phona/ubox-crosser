@@ -1,14 +1,28 @@
-hash: 888acdabbb078a912ca111554f066be61389616b9ef8825c2a3c861ca6cb3ae0
-updated: 2019-04-26T01:41:49.240304+08:00
+hash: b9114a8294e716eaac1b900e8c83781c7cbd9e4c380ae888e939fe94a6a2a9dc
+updated: 2019-05-02T00:45:14.909513+08:00
 imports:
 - name: github.com/armon/go-socks5
   version: e75332964ef517daa070d7c38a9466a0d687e0a5
+- name: github.com/inconshreveable/mousetrap
+  version: 76626ae9c91c4f2a10f34cad8ce83ea42c93bb75
 - name: github.com/shadowsocks/shadowsocks-go
   version: 97a5c71f80ba5f5b3e549f14a619fe557ff4f3c9
   subpackages:
   - shadowsocks
 - name: github.com/Sirupsen/logrus
   version: f006c2ac4710855cf0f916dd6b77acf6b048dc6e
+- name: github.com/spf13/cobra
+  version: ef82de70bb3f60c65fb8eebacbb2d122ef517385
+  repo: https://github.com/spf13/cobra
+  vcs: git
+- name: github.com/spf13/pflag
+  version: 298182f68c66c05229eb03ac171abe6e309ee79a
+  repo: https://github.com/spf13/pflag
+  vcs: git
+- name: github.com/spf13/viper
+  version: 9e56dacc08fbbf8c9ee2dbc717553c758ce42bc9
+  repo: https://github.com/spf13/viper
+  vcs: git
 - name: github.com/Yawning/chacha20
   version: e3b1f968fc6397b51d963fee8ec8711a47bc0ce8
   repo: https://github.com/Yawning/chacha20

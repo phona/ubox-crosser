@@ -20,10 +20,10 @@ func NewProxyServer(cipher *ss.Cipher) *ProxyServer {
 	return &ProxyServer{cipher: cipher}
 }
 
-func (p *ProxyServer) Listen(southAddress, northAddress string) {
+func (p *ProxyServer) Listen(southAddress, northAddress, loginPass string) {
 	log.Infof("South bridge listen on %s, North bridge listen on %s", southAddress, northAddress)
 	go p.serve(southAddress)
-	p.openController(northAddress)
+	p.openController(northAddress, loginPass)
 }
 
 func (p *ProxyServer) serve(address string) {
@@ -44,19 +44,65 @@ func (p *ProxyServer) serve(address string) {
 	}
 }
 
-func (p *ProxyServer) openController(address string) {
-	p.controller = NewController(address, p.cipher)
+func (p *ProxyServer) openController(address, loginPass string) {
+	p.controller = NewController(address, loginPass, p.cipher)
 	p.controller.Run()
 }
 
 func (p *ProxyServer) pipe(conn net.Conn) {
+	if p.controller == nil {
+		log.Error("The controller of proxy server is null.")
+		return
+	}
+
 	workConn, err := p.controller.GetConn()
+	if err != nil {
+		log.Error(err)
+		conn.Close()
+		return
+	}
+
 	log.Debugf("Pipe between request connection and work connection, %s -> %s", conn.RemoteAddr().String(), workConn.RemoteAddr().String())
 	if err != nil {
 		log.Println("Listener for incoming connections from client closed")
 		log.Error("Error pipe:", err)
 	} else {
-		go ss.PipeThenClose(conn, workConn)
-		ss.PipeThenClose(workConn, conn)
+		//go ss.PipeThenClose(conn, workConn)
+		//ss.PipeThenClose(workConn, conn)
+		go pipeThenClose(workConn, conn)
+		pipeThenClose(conn, workConn)
+	}
+}
+
+var customLeackyBuf = ss.NewLeakyBuf(2048, 4096)
+
+func pipeThenClose(src, dst net.Conn) {
+	defer dst.Close()
+	buf := customLeackyBuf.Get()
+	defer customLeackyBuf.Put(buf)
+	for {
+		ss.SetReadTimeout(src)
+		n, err := src.Read(buf)
+		// log.Infof("%s -> %s", src.LocalAddr().String(), dst.LocalAddr().String())
+		// read may return EOF with n > 0
+		// should always process n > 0 bytes before handling error
+		if n > 0 {
+			// Note: avoid overwrite err returned by Read.
+			if _, err := dst.Write(buf[0:n]); err != nil {
+				log.Println("write:", err)
+				break
+			}
+		}
+		if err != nil {
+			// Always "use of closed network connection", but no easy way to
+			// identify this specific error. So just leave the error along for now.
+			// More info here: https://code.google.com/p/go/issues/detail?id=4373
+			/*
+				if bool(Debug) && err != io.EOF {
+					Debug.Println("read:", err)
+				}
+			*/
+			break
+		}
 	}
 }

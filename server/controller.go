@@ -13,8 +13,9 @@ import (
 )
 
 type Controller struct {
-	Address string
-	cipher  *shadowsocks.Cipher
+	Address       string
+	cipher        *shadowsocks.Cipher
+	IsNeedEncrypt bool
 
 	ctlConn   *connector.Coordinator
 	workConn  chan net.Conn
@@ -22,12 +23,13 @@ type Controller struct {
 	LoginPass string
 }
 
-func NewController(address, loginPass string, cipher *shadowsocks.Cipher) *Controller {
+func NewController(address, loginPass string, IsNeedEncrypt bool, cipher *shadowsocks.Cipher) *Controller {
 	return &Controller{
-		Address:   address,
-		cipher:    cipher,
-		LoginPass: loginPass,
-		workConn:  make(chan net.Conn, 10),
+		Address:       address,
+		cipher:        cipher,
+		LoginPass:     loginPass,
+		workConn:      make(chan net.Conn, 10),
+		IsNeedEncrypt: IsNeedEncrypt,
 	}
 }
 
@@ -45,11 +47,7 @@ func (c *Controller) Run() {
 		if err != nil {
 			log.Error("Error accepting new connection: ", err)
 		}
-		if c.cipher != nil {
-			rawConn = shadowsocks.NewConn(rawConn, c.cipher.Copy())
-		}
-		coordinator := connector.AsCoordinator(rawConn)
-		go c.handleConnection(coordinator)
+		go c.handleConnection(rawConn)
 	}
 }
 
@@ -73,11 +71,7 @@ func (c *Controller) GetConn() (net.Conn, error) {
 
 func (c *Controller) login(reqMsg message.Message, coordinator *connector.Coordinator) {
 	if reqMsg.Password != c.LoginPass {
-		log.Errorf("Invalid login password for user %s: %+v", reqMsg.Name, reqMsg)
-		return
-	}
-	if reqMsg.Name == "" {
-		log.Errorf("Username can't be empty when login to server: %+v", reqMsg)
+		log.Errorf("Invalid login password: %+v", reqMsg)
 		return
 	}
 	c.mutex.Lock()
@@ -109,13 +103,18 @@ func (c *Controller) daemonize(coordinator *connector.Coordinator) {
 				}
 				log.Debug("Received a heartbeat")
 			default:
-				log.Errorf("Unknown type %s, message % were received", reqMsg.Type, reqMsg.Msg)
+				log.Errorf("Unknown type %s were received", reqMsg.Type)
 			}
 		}
 	}
 }
 
-func (c *Controller) handleConnection(coordinator *connector.Coordinator) {
+func (c *Controller) handleConnection(rawConn net.Conn) {
+	newConn := rawConn
+	if c.cipher != nil {
+		newConn = shadowsocks.NewConn(newConn, c.cipher.Copy())
+	}
+	coordinator := connector.AsCoordinator(newConn)
 	var reqMessage message.Message
 	if content, err := coordinator.ReadMsg(); err != nil {
 		log.Error("Error receiving content: ", err)
@@ -128,10 +127,14 @@ func (c *Controller) handleConnection(coordinator *connector.Coordinator) {
 		case message.LOGIN:
 			go c.login(reqMessage, coordinator)
 		case message.GEN_WORKER:
-			c.workConn <- coordinator.Conn
+			if c.IsNeedEncrypt {
+				c.workConn <- coordinator.Conn
+			} else {
+				c.workConn <- rawConn
+			}
 			log.Debug("Add new work connection")
 		default:
-			log.Errorf("Unknown type %s, message % were received", reqMessage.Type, reqMessage.Msg)
+			log.Errorf("Unknown type %s were received", reqMessage.Type)
 		}
 	}
 }

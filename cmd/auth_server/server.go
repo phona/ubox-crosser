@@ -13,12 +13,14 @@ import (
 )
 
 func main() {
-	var cmdConfig config.ServerConfig
+	var cmdConfig config.AuthServerConfig
 	cmd := &cobra.Command{
-		Use: "UBox-crosser server",
+		Use: "UBox-crosser authenticated server",
 		Run: func(cmd *cobra.Command, args []string) {
-			if cmdConfig.ControllerAddress == "" {
+			if cmdConfig.TargetAddress == "" {
 				fmt.Println("control channel address can't be empty")
+			} else if cmdConfig.Method != "" && cmdConfig.Key == "" {
+				fmt.Println("password can't be empty")
 			} else if cmdConfig.ExposeAddress == "" {
 				fmt.Println("external address can't be empty")
 			}
@@ -38,17 +40,16 @@ func main() {
 			log.SetLogLevel("debug")
 			content, _ := json.Marshal(cmdConfig)
 			logrus.Infof("Config init: %s", content)
-			proxy := server.NewProxyServer(cmdConfig.ExposeAddress, cmdConfig.ExposerPass,
-				cmdConfig.ControllerAddress, cmdConfig.ControllerPass, cipher)
-			proxy.Run()
+
+			proxy := server.NewAuthServer(cmdConfig.TargetAddress, cmdConfig.LoginPassword, cipher)
+			proxy.Listen(cmdConfig.ExposeAddress)
 		},
 	}
 	cmd.Flags().StringVarP(&cmdConfig.Key, "key", "k", "", "encrypt key")
-	cmd.Flags().StringVarP(&cmdConfig.ControllerAddress, "controller-address", "c", "", "specify a address for communicate with ubox-client, example: 127.0.0.1:7000")
-	cmd.Flags().StringVarP(&cmdConfig.ExposeAddress, "expose-address", "e", "", "specify a address for for accept request from internet, example: 127.0.0.1:7000")
+	cmd.Flags().StringVarP(&cmdConfig.LoginPassword, "login-password", "p", "", "login password")
+	cmd.Flags().StringVarP(&cmdConfig.TargetAddress, "target-address", "t", "", "specify a address to tunnel server, example: 127.0.0.1:7000")
+	cmd.Flags().StringVarP(&cmdConfig.ExposeAddress, "expose-address", "e", "", "specify a address for proxy server, example: 127.0.0.1:7000")
 	cmd.Flags().StringVarP(&cmdConfig.Method, "method", "m", "", "encryption method")
-	cmd.Flags().StringVarP(&cmdConfig.ControllerPass, "south-password", "C", "", "expose password")
-	cmd.Flags().StringVarP(&cmdConfig.ExposerPass, "north-password", "E", "", "controller password")
 	cmd.Flags().StringVar(&cmdConfig.LogFile, "log-file", "", "log file path")
 	cmd.Flags().StringVar(&cmdConfig.LogLevel, "log-Level", "debug", "log file path")
 	cmd.Flags().StringVar(&cmdConfig.ConfigFile, "config-file", "", "config file path")

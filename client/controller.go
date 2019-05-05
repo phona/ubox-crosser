@@ -24,7 +24,7 @@ type Controller struct {
 	ctlConn        *connector.Coordinator
 	heartBeatTimer *time.Timer
 
-	Name, Username, Password string
+	Password string
 
 	// this property can be abstracted
 	sessionLayer *socks5.Server
@@ -32,16 +32,13 @@ type Controller struct {
 	mutex        sync.Mutex
 }
 
-func NewController(address string, server *socks5.Server, cipher *shadowsocks.Cipher,
-	name, username, password string) *Controller {
+func NewController(address string, server *socks5.Server, cipher *shadowsocks.Cipher, password string) *Controller {
 	return &Controller{
 		Address:        address,
 		ctlConn:        nil,
 		heartBeatTimer: nil,
 		sessionLayer:   server,
 		cipher:         cipher,
-		Name:           name,
-		Username:       username,
 		Password:       password,
 	}
 }
@@ -96,7 +93,7 @@ func (c *Controller) handleMessage() {
 				// a heart beat
 				log.Infof("Received a heart beat from %s", c.ctlConn.Conn.RemoteAddr().String())
 			default:
-				log.Errorf("Unknown type %s, respMsg % were received", respMsg.Type, respMsg.Msg)
+				log.Errorf("Unknown type %s were received", respMsg.Type)
 			}
 		}
 	}
@@ -151,7 +148,7 @@ func (c *Controller) login() error {
 		return err
 	}
 
-	reqMsg := message.Message{Type: message.LOGIN, Name: c.Name, Password: c.Password}
+	reqMsg := message.Message{Type: message.LOGIN, Password: c.Password}
 	buf, _ := json.Marshal(reqMsg)
 	err = controlConn.SendMsg(string(buf))
 	if err != nil {

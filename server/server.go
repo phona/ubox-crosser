@@ -1,10 +1,14 @@
 package server
 
 import (
+	"encoding/json"
+	"fmt"
 	log "github.com/Sirupsen/logrus"
 	ss "github.com/shadowsocks/shadowsocks-go/shadowsocks"
 	"net"
 	"os"
+	"ubox-crosser/models/message"
+	"ubox-crosser/utils/connector"
 )
 
 // for opening a listener to proxy request
@@ -13,39 +17,96 @@ type ProxyServer struct {
 	listener   *net.Listener
 	controller *Controller
 
+	exposerPass, controllerPass string
+	exposerAddr, controllerAddr string
+
 	cipher *ss.Cipher
 }
 
-func NewProxyServer(cipher *ss.Cipher) *ProxyServer {
-	return &ProxyServer{cipher: cipher}
+func NewProxyServer(exposerAddr, exposerPass, controllerAddr, controllerPass string, cipher *ss.Cipher) *ProxyServer {
+	return &ProxyServer{
+		exposerPass:    exposerPass,
+		exposerAddr:    exposerAddr,
+		controllerPass: controllerPass,
+		controllerAddr: controllerAddr,
+		cipher:         cipher,
+	}
 }
 
-func (p *ProxyServer) Listen(southAddress, northAddress, loginPass string) {
-	log.Infof("South bridge listen on %s, North bridge listen on %s", southAddress, northAddress)
-	go p.serve(southAddress)
-	p.openController(northAddress, loginPass)
+func (p *ProxyServer) Run() {
+	log.Infof("Exposer listen on %s, Controller listen on %s", p.exposerAddr, p.controllerAddr)
+	go p.runExposer()
+	p.runController()
 }
 
-func (p *ProxyServer) serve(address string) {
-	if listener, err := net.Listen("tcp", address); err != nil {
+func (p *ProxyServer) runExposer() {
+	if listener, err := net.Listen("tcp", p.exposerAddr); err != nil {
 		log.Fatalln(err)
 		os.Exit(0)
 	} else {
 		p.listener = &listener
 		for {
-			rawConn, err := listener.Accept()
+			conn, err := listener.Accept()
 			if err != nil {
 				log.Fatalln(err)
 				continue
 			}
 			log.Info("get a new request")
-			go p.pipe(rawConn)
+			go p.handleExposerConn(conn)
 		}
 	}
 }
 
-func (p *ProxyServer) openController(address, loginPass string) {
-	p.controller = NewController(address, loginPass, p.cipher)
+func (p *ProxyServer) handleExposerConn(conn net.Conn) {
+	newConn := conn
+	if p.cipher != nil {
+		newConn = ss.NewConn(newConn, p.cipher.Copy())
+	}
+
+	var reqMsg message.Message
+	coordinator := connector.AsCoordinator(newConn)
+	var errFunc = func(err error) {
+		var respMsg message.ResultMessage
+		respMsg.Result = message.FAILED
+		buf, _ := json.Marshal(respMsg)
+		coordinator.SendMsg(string(buf))
+		conn.Close()
+		log.Errorf("Error handling connection in proxy server: %s", err)
+	}
+
+	if content, err := coordinator.ReadMsg(); err != nil {
+		errFunc(err)
+	} else if err := json.Unmarshal([]byte(content), &reqMsg); err != nil {
+		errFunc(err)
+	} else if reqMsg.Type != message.LOGIN {
+		errFunc(fmt.Errorf("Invalid type %s != %s", message.LOGIN, reqMsg.Type))
+	} else if reqMsg.Password != p.exposerPass {
+		errFunc(fmt.Errorf("Invalid password %s != %s", p.exposerPass, reqMsg.Password))
+	} else {
+		var simpleErrHandle = func(err error) {
+			conn.Close()
+			log.Errorf("Error handling connection in proxy server: %s", err)
+		}
+		var respMsg message.ResultMessage
+		respMsg.Result = message.SUCCESS
+
+		buf, _ := json.Marshal(respMsg)
+		if err := coordinator.SendMsg(string(buf)); err != nil {
+			simpleErrHandle(err)
+		} else {
+			go p.pipe(conn)
+		}
+	}
+}
+
+func (p *ProxyServer) runController() {
+	var IsNeedEncrypt bool
+	if p.exposerPass == "" {
+		IsNeedEncrypt = true
+	} else {
+		IsNeedEncrypt = false
+	}
+	p.controller = NewController(p.controllerAddr, p.controllerPass, IsNeedEncrypt, p.cipher)
 	p.controller.Run()
 }
 
@@ -63,46 +124,8 @@ func (p *ProxyServer) pipe(conn net.Conn) {
 	}
 
 	log.Debugf("Pipe between request connection and work connection, %s -> %s", conn.RemoteAddr().String(), workConn.RemoteAddr().String())
-	if err != nil {
-		log.Println("Listener for incoming connections from client closed")
-		log.Error("Error pipe:", err)
-	} else {
-		//go ss.PipeThenClose(conn, workConn)
-		//ss.PipeThenClose(workConn, conn)
-		go pipeThenClose(workConn, conn)
-		pipeThenClose(conn, workConn)
-	}
-}
-
-var customLeackyBuf = ss.NewLeakyBuf(2048, 4096)
-
-func pipeThenClose(src, dst net.Conn) {
-	defer dst.Close()
-	buf := customLeackyBuf.Get()
-	defer customLeackyBuf.Put(buf)
-	for {
-		ss.SetReadTimeout(src)
-		n, err := src.Read(buf)
-		// log.Infof("%s -> %s", src.LocalAddr().String(), dst.LocalAddr().String())
-		// read may return EOF with n > 0
-		// should always process n > 0 bytes before handling error
-		if n > 0 {
-			// Note: avoid overwrite err returned by Read.
-			if _, err := dst.Write(buf[0:n]); err != nil {
-				log.Println("write:", err)
-				break
-			}
-		}
-		if err != nil {
-			// Always "use of closed network connection", but no easy way to
-			// identify this specific error. So just leave the error along for now.
-			// More info here: https://code.google.com/p/go/issues/detail?id=4373
-			/*
-				if bool(Debug) && err != io.EOF {
-					Debug.Println("read:", err)
-				}
-			*/
-			break
-		}
-	}
+	//go ss.PipeThenClose(conn, workConn)
+	//ss.PipeThenClose(workConn, conn)
+	go pipeThenClose(workConn, conn)
+	pipeThenClose(conn, workConn)
 }

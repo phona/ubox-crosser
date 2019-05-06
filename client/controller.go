@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	log "github.com/Sirupsen/logrus"
 	"github.com/armon/go-socks5"
-	"github.com/shadowsocks/shadowsocks-go/shadowsocks"
+	ss "github.com/shadowsocks/shadowsocks-go/shadowsocks"
 	"io"
 	"net"
 	"sync"
@@ -28,11 +28,11 @@ type Controller struct {
 
 	// this property can be abstracted
 	sessionLayer *socks5.Server
-	cipher       *shadowsocks.Cipher
+	cipher       *ss.Cipher
 	mutex        sync.Mutex
 }
 
-func NewController(address string, server *socks5.Server, cipher *shadowsocks.Cipher, password string) *Controller {
+func NewController(address string, server *socks5.Server, cipher *ss.Cipher, password string) *Controller {
 	return &Controller{
 		Address:        address,
 		ctlConn:        nil,
@@ -128,7 +128,7 @@ func (c *Controller) getConn() (*connector.Coordinator, error) {
 		return nil, err
 	} else {
 		if c.cipher != nil {
-			conn = shadowsocks.NewConn(conn, c.cipher.Copy())
+			conn = ss.NewConn(conn, c.cipher.Copy())
 		}
 		return connector.AsCoordinator(conn), nil
 	}

@@ -66,17 +66,18 @@ func (p *ProxyServer) handleExposerConn(src net.Conn) {
 			return
 		}
 		// go communicate(newSrc, ss.NewConn(dst, p.cipher.Copy()))
-		communicate(src, dst)
+
+		// communicate(src, dst)
+		testSocks5Req(src, dst)
 		return
 	}
 
-	newSrc := src
 	if p.cipher != nil {
-		newSrc = ss.NewConn(newSrc, p.cipher.Copy())
+		src = ss.NewConn(src, p.cipher.Copy())
 	}
 
 	var reqMsg message.Message
-	coordinator := connector.AsCoordinator(newSrc)
+	coordinator := connector.AsCoordinator(src)
 	var errFunc = func(err error) {
 		var respMsg message.ResultMessage
 		respMsg.Result = message.FAILED
@@ -110,19 +111,21 @@ func (p *ProxyServer) handleExposerConn(src net.Conn) {
 		} else if dst, err := p.controller.GetConn(); err != nil {
 			simpleErrHandle(err)
 		} else {
-			// go communicate(newSrc, ss.NewConn(dst, p.cipher.Copy()))
 			communicate(src, dst)
 		}
 	}
 }
 
 func (p *ProxyServer) runController() {
-	var IsNeedEncrypt bool
-	if p.exposerPass == "" {
-		IsNeedEncrypt = true
-	} else {
-		IsNeedEncrypt = false
-	}
-	p.controller = NewController(p.controllerAddr, p.controllerPass, IsNeedEncrypt, p.cipher)
+	p.controller = NewController(p.controllerAddr, p.controllerPass, p.cipher.Copy())
 	p.controller.Run()
+}
+
+func testSocks5Req(src, dst net.Conn) {
+	buf := make([]byte, 10)
+	dst.Write([]byte{5, 2, 0, 1})
+	dst.Read(buf)
+	fmt.Println(buf)
+	src.Close()
+	dst.Close()
 }

@@ -1,5 +1,5 @@
 hash: b9114a8294e716eaac1b900e8c83781c7cbd9e4c380ae888e939fe94a6a2a9dc
-updated: 2019-05-05T09:22:25.131625+08:00
+updated: 2019-05-06T19:42:21.770497+08:00
 imports:
 - name: github.com/armon/go-socks5
   version: e75332964ef517daa070d7c38a9466a0d687e0a5
@@ -12,15 +12,15 @@ imports:
 - name: github.com/Sirupsen/logrus
   version: f006c2ac4710855cf0f916dd6b77acf6b048dc6e
 - name: github.com/spf13/cobra
-  version: 7547e83b2d85fd1893c7d76916f67689d761fecb
+  version: ef82de70bb3f60c65fb8eebacbb2d122ef517385
   repo: https://github.com/spf13/cobra
   vcs: git
 - name: github.com/spf13/pflag
-  version: 24fa6976df40757dce6aea913e7b81ade90530e1
+  version: 298182f68c66c05229eb03ac171abe6e309ee79a
   repo: https://github.com/spf13/pflag
   vcs: git
 - name: github.com/spf13/viper
-  version: 6d33b5a963d922d182c91e8a1c88d81fd150cfd4
+  version: 9e56dacc08fbbf8c9ee2dbc717553c758ce42bc9
   repo: https://github.com/spf13/viper
   vcs: git
 - name: github.com/Yawning/chacha20

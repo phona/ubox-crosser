@@ -13,9 +13,8 @@ import (
 )
 
 type Controller struct {
-	Address       string
-	cipher        *shadowsocks.Cipher
-	IsNeedEncrypt bool
+	Address string
+	cipher  *shadowsocks.Cipher
 
 	ctlConn   *connector.Coordinator
 	workConn  chan net.Conn
@@ -23,13 +22,12 @@ type Controller struct {
 	LoginPass string
 }
 
-func NewController(address, loginPass string, IsNeedEncrypt bool, cipher *shadowsocks.Cipher) *Controller {
+func NewController(address, loginPass string, cipher *shadowsocks.Cipher) *Controller {
 	return &Controller{
-		Address:       address,
-		cipher:        cipher,
-		LoginPass:     loginPass,
-		workConn:      make(chan net.Conn, 10),
-		IsNeedEncrypt: IsNeedEncrypt,
+		Address:   address,
+		cipher:    cipher,
+		LoginPass: loginPass,
+		workConn:  make(chan net.Conn, 10),
 	}
 }
 
@@ -127,11 +125,7 @@ func (c *Controller) handleConnection(rawConn net.Conn) {
 		case message.LOGIN:
 			go c.login(reqMessage, coordinator)
 		case message.GEN_WORKER:
-			if c.IsNeedEncrypt {
-				c.workConn <- coordinator.Conn
-			} else {
-				c.workConn <- rawConn
-			}
+			c.workConn <- coordinator.Conn
 			log.Debug("Add new work connection")
 		default:
 			log.Errorf("Unknown type %s were received", reqMessage.Type)

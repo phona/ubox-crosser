@@ -41,7 +41,6 @@ func main() {
 			}
 
 			log.InitLog(cmdConfig.LogFile, cmdConfig.LogLevel)
-			log.SetLogLevel("debug")
 			content, _ := json.Marshal(cmdConfig)
 			logrus.Infof("Config init: %s", content)
 			proxy := server.NewProxyServer(cmdConfig.ExposeAddress, cmdConfig.ExposerPass,

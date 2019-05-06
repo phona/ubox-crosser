@@ -157,7 +157,7 @@ func (c *Controller) login() error {
 		return err
 	}
 	// login success
-	// go c.startHeartBeat(controlConn)
+	go c.startHeartBeat(controlConn)
 	return nil
 }
 

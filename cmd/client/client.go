@@ -18,17 +18,23 @@ func main() {
 		Use: "UBox-crosser server",
 		Run: func(cmd *cobra.Command, args []string) {
 			if cmdConfig.TargetAddress == "" {
+				cmd.Help()
 				fmt.Println("target address can't be empty")
+				os.Exit(0)
 			} else if cmdConfig.Method != "" && cmdConfig.Key == "" {
+				cmd.Help()
 				fmt.Println("password can't be empty")
+				os.Exit(0)
 			}
 
 			var cipher *shadowsocks.Cipher
 			if cmdConfig.Method != "" {
 				if err := shadowsocks.CheckCipherMethod(cmdConfig.Method); err != nil {
+					cmd.Help()
 					fmt.Fprintln(os.Stderr, err)
 					os.Exit(1)
 				} else if cipher, err = shadowsocks.NewCipher(cmdConfig.Method, cmdConfig.Key); err != nil {
+					cmd.Help()
 					fmt.Fprintln(os.Stderr, err)
 					os.Exit(1)
 				}
@@ -39,6 +45,7 @@ func main() {
 			logrus.Infof("Config init: %s", content)
 			cli := client.NewClient(cipher)
 			if err := cli.Connect(cmdConfig.TargetAddress, cmdConfig.LoginPassword); err != nil {
+				cmd.Help()
 				fmt.Println(err)
 				os.Exit(0)
 			}

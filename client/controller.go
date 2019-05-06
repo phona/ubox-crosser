@@ -157,7 +157,7 @@ func (c *Controller) login() error {
 		return err
 	}
 	// login success
-	go c.startHeartBeat(controlConn)
+	// go c.startHeartBeat(controlConn)
 	return nil
 }
 
@@ -172,16 +172,12 @@ func (c *Controller) startHeartBeat(coordinator *connector.Coordinator) {
 	defer c.heartBeatTimer.Stop()
 
 	reqMsg := message.Message{Type: message.HEART_BEAT}
-	buf, err := json.Marshal(reqMsg)
-	if err != nil {
-		log.Warn("Serialize reqMsg err! Err: %v", err)
-	}
-
+	buf, _ := json.Marshal(reqMsg)
 	log.Infof("Start to send heartbeat send %+v", reqMsg)
 	for {
 		time.Sleep(time.Duration(HeartBeatInterval) * time.Second)
 		if c != nil && !coordinator.IsTerminate() {
-			err = coordinator.SendMsg(string(buf))
+			err := coordinator.SendMsg(string(buf))
 			log.Info("Send heartbeat to server")
 			if err != nil {
 				log.Error("Send heartbeat to server failed! Err:%v", err)

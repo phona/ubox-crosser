@@ -57,20 +57,32 @@ func (p *ProxyServer) runExposer() {
 	}
 }
 
-func (p *ProxyServer) handleExposerConn(conn net.Conn) {
-	newConn := conn
+func (p *ProxyServer) handleExposerConn(src net.Conn) {
+	if p.exposerPass == "" {
+		dst, err := p.controller.GetConn()
+		if err != nil {
+			log.Error(err)
+			src.Close()
+			return
+		}
+		// go communicate(newSrc, ss.NewConn(dst, p.cipher.Copy()))
+		communicate(src, dst)
+		return
+	}
+
+	newSrc := src
 	if p.cipher != nil {
-		newConn = ss.NewConn(newConn, p.cipher.Copy())
+		newSrc = ss.NewConn(newSrc, p.cipher.Copy())
 	}
 
 	var reqMsg message.Message
-	coordinator := connector.AsCoordinator(newConn)
+	coordinator := connector.AsCoordinator(newSrc)
 	var errFunc = func(err error) {
 		var respMsg message.ResultMessage
 		respMsg.Result = message.FAILED
 		buf, _ := json.Marshal(respMsg)
 		coordinator.SendMsg(string(buf))
-		conn.Close()
+		src.Close()
 		log.Errorf("Error handling connection in proxy server: %s", err)
 	}
 
@@ -84,17 +96,22 @@ func (p *ProxyServer) handleExposerConn(conn net.Conn) {
 		errFunc(fmt.Errorf("Invalid password %s != %s", p.exposerPass, reqMsg.Password))
 	} else {
 		var simpleErrHandle = func(err error) {
-			conn.Close()
+			src.Close()
 			log.Errorf("Error handling connection in proxy server: %s", err)
 		}
+
 		var respMsg message.ResultMessage
 		respMsg.Result = message.SUCCESS
 		buf, _ := json.Marshal(respMsg)
 		if err := coordinator.SendMsg(string(buf)); err != nil {
 			simpleErrHandle(err)
+		} else if p.controller == nil {
+			simpleErrHandle(fmt.Errorf("The controller of proxy server is null."))
+		} else if dst, err := p.controller.GetConn(); err != nil {
+			simpleErrHandle(err)
 		} else {
-			//go p.pipe(newConn)
-			go p.pipe(conn)
+			// go communicate(newSrc, ss.NewConn(dst, p.cipher.Copy()))
+			communicate(src, dst)
 		}
 	}
 }
@@ -108,26 +125,4 @@ func (p *ProxyServer) runController() {
 	}
 	p.controller = NewController(p.controllerAddr, p.controllerPass, IsNeedEncrypt, p.cipher)
 	p.controller.Run()
-}
-
-func (p *ProxyServer) pipe(conn net.Conn) {
-	if p.controller == nil {
-		log.Error("The controller of proxy server is null.")
-		return
-	}
-
-	workConn, err := p.controller.GetConn()
-	if err != nil {
-		log.Error(err)
-		conn.Close()
-		return
-	}
-	//
-	//if p.cipher != nil {
-	//	workConn = ss.NewConn(workConn, p.cipher.Copy())
-	//}
-
-	log.Debugf("Pipe between request connection and work connection, %s -> %s", conn.RemoteAddr().String(), workConn.RemoteAddr().String())
-	go pipeThenClose(workConn, conn)
-	pipeThenClose(conn, workConn)
 }

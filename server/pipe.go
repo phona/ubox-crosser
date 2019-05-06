@@ -19,10 +19,13 @@ func pipeThenClose(src, dst net.Conn) {
 		// should always process n > 0 bytes before handling error
 		if n > 0 {
 			// Note: avoid overwrite err returned by Read.
-			log.Infof("%s -> %s size: %d", src.LocalAddr().String(), dst.LocalAddr().String(), n)
+			log.Debugf("%s -> %s size: %d, %x", src.LocalAddr().String(), dst.LocalAddr().String(), n, buf[0:n])
+			log.Debugf("%s -> %s size: %d, %x", src.RemoteAddr().String(), dst.RemoteAddr().String(), n, buf[0:n])
 			if _, err := dst.Write(buf[0:n]); err != nil {
-				log.Println("write:", err)
+				log.Errorln("write:", err)
 				break
+			} else {
+				log.Debugf("pipe: %d, %x", n, buf[0:n])
 			}
 		}
 		if err != nil {
@@ -37,4 +40,10 @@ func pipeThenClose(src, dst net.Conn) {
 			break
 		}
 	}
+}
+
+func communicate(src, dst net.Conn) {
+	log.Debugf("Pipe between request connection and work connection, %s -> %s", src.RemoteAddr().String(), dst.RemoteAddr().String())
+	go pipeThenClose(src, dst)
+	pipeThenClose(dst, src)
 }

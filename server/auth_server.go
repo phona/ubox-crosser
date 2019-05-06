@@ -42,14 +42,14 @@ func (a *AuthServer) Listen(address string) {
 	}
 }
 
-func (a *AuthServer) handleConnection(conn net.Conn) {
-	workConn, err := a.getConn()
+func (a *AuthServer) handleConnection(src net.Conn) {
+	dst, err := a.getConn()
 	if err != nil {
 		log.Error(err)
-		conn.Close()
+		src.Close()
 		return
 	}
-	go a.pipe(conn, workConn)
+	go communicate(src, dst)
 }
 
 func (a *AuthServer) getConn() (net.Conn, error) {
@@ -93,9 +93,4 @@ func (a *AuthServer) getConn() (net.Conn, error) {
 			return errFunc(fmt.Errorf("Invalid status code %s", respMsg.Result))
 		}
 	}
-}
-
-func (a *AuthServer) pipe(conn, workConn net.Conn) {
-	go pipeThenClose(workConn, conn)
-	pipeThenClose(conn, workConn)
 }

@@ -15,11 +15,11 @@ func pipeThenClose(src, dst net.Conn) {
 	for {
 		ss.SetReadTimeout(src)
 		n, err := src.Read(buf)
-		// log.Infof("%s -> %s", src.LocalAddr().String(), dst.LocalAddr().String())
 		// read may return EOF with n > 0
 		// should always process n > 0 bytes before handling error
 		if n > 0 {
 			// Note: avoid overwrite err returned by Read.
+			log.Infof("%s -> %s size: %d", src.LocalAddr().String(), dst.LocalAddr().String(), n)
 			if _, err := dst.Write(buf[0:n]); err != nil {
 				log.Println("write:", err)
 				break

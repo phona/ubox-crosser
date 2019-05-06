@@ -5,10 +5,6 @@ import (
 	"os"
 )
 
-func init() {
-	log.SetLevel(log.DebugLevel)
-}
-
 func InitLog(logFile string, logLevel string) {
 	SetLogFile(logFile)
 	SetLogLevel(logLevel)

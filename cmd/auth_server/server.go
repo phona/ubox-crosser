@@ -51,7 +51,7 @@ func main() {
 	cmd.Flags().StringVarP(&cmdConfig.ExposeAddress, "expose-address", "e", "", "specify a address for proxy server, example: 127.0.0.1:7000")
 	cmd.Flags().StringVarP(&cmdConfig.Method, "method", "m", "", "encryption method")
 	cmd.Flags().StringVar(&cmdConfig.LogFile, "log-file", "", "log file path")
-	cmd.Flags().StringVar(&cmdConfig.LogLevel, "log-Level", "debug", "log file path")
+	cmd.Flags().StringVar(&cmdConfig.LogLevel, "log-level", "debug", "log file path")
 	cmd.Flags().StringVar(&cmdConfig.ConfigFile, "config-file", "", "config file path")
 	if err := cmd.Execute(); err != nil {
 		fmt.Println(err)

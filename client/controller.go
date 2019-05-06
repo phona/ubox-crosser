@@ -112,8 +112,6 @@ func (c *Controller) newWorkConn() {
 			log.Infof("Error sending work message to %s in a work connection: %s",
 				c.ctlConn.Conn.RemoteAddr().String(), err)
 		} else {
-			// temp, err := workConn.ReadMsg()
-			// log.Info("Work connection received content ", temp, err)
 			log.Infof("Create a new socks5 work connection, %s", workConn.Conn.LocalAddr())
 			if err := c.sessionLayer.ServeConn(workConn.Conn); err != nil {
 				log.Errorf("Error serving a work connection with socks5 protocol: ", err)
@@ -123,13 +121,16 @@ func (c *Controller) newWorkConn() {
 }
 
 func (c *Controller) getConn() (*connector.Coordinator, error) {
-	if rawConn, err := net.Dial("tcp", c.Address); err != nil {
+	var conn net.Conn
+	if addr, err := net.ResolveTCPAddr("", c.Address); err != nil {
+		return nil, err
+	} else if conn, err = net.DialTCP("tcp", nil, addr); err != nil {
 		return nil, err
 	} else {
 		if c.cipher != nil {
-			rawConn = shadowsocks.NewConn(rawConn, c.cipher.Copy())
+			conn = shadowsocks.NewConn(conn, c.cipher.Copy())
 		}
-		return connector.AsCoordinator(rawConn), nil
+		return connector.AsCoordinator(conn), nil
 	}
 }
 

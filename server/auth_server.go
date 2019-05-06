@@ -49,10 +49,6 @@ func (a *AuthServer) handleConnection(conn net.Conn) {
 		conn.Close()
 		return
 	}
-
-	if a.cipher != nil {
-		workConn = ss.NewConn(workConn, a.cipher.Copy())
-	}
 	go a.pipe(conn, workConn)
 }
 

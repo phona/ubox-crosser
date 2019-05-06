@@ -89,11 +89,11 @@ func (p *ProxyServer) handleExposerConn(conn net.Conn) {
 		}
 		var respMsg message.ResultMessage
 		respMsg.Result = message.SUCCESS
-
 		buf, _ := json.Marshal(respMsg)
 		if err := coordinator.SendMsg(string(buf)); err != nil {
 			simpleErrHandle(err)
 		} else {
+			//go p.pipe(newConn)
 			go p.pipe(conn)
 		}
 	}
@@ -122,10 +122,12 @@ func (p *ProxyServer) pipe(conn net.Conn) {
 		conn.Close()
 		return
 	}
+	//
+	//if p.cipher != nil {
+	//	workConn = ss.NewConn(workConn, p.cipher.Copy())
+	//}
 
 	log.Debugf("Pipe between request connection and work connection, %s -> %s", conn.RemoteAddr().String(), workConn.RemoteAddr().String())
-	//go ss.PipeThenClose(conn, workConn)
-	//ss.PipeThenClose(workConn, conn)
 	go pipeThenClose(workConn, conn)
 	pipeThenClose(conn, workConn)
 }

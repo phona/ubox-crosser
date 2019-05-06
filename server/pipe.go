@@ -42,7 +42,7 @@ func pipeThenClose(src, dst net.Conn) {
 	}
 }
 
-func communicate(src, dst net.Conn) {
+func drillingTunnel(src, dst net.Conn) {
 	log.Debugf("Pipe between request connection and work connection, %s -> %s", src.RemoteAddr().String(), dst.RemoteAddr().String())
 	go pipeThenClose(src, dst)
 	pipeThenClose(dst, src)

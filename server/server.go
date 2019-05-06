@@ -65,10 +65,7 @@ func (p *ProxyServer) handleExposerConn(src net.Conn) {
 			src.Close()
 			return
 		}
-		// go communicate(newSrc, ss.NewConn(dst, p.cipher.Copy()))
-
-		// communicate(src, dst)
-		testSocks5Req(src, dst)
+		go drillingTunnel(src, dst)
 		return
 	}
 
@@ -111,7 +108,7 @@ func (p *ProxyServer) handleExposerConn(src net.Conn) {
 		} else if dst, err := p.controller.GetConn(); err != nil {
 			simpleErrHandle(err)
 		} else {
-			communicate(src, dst)
+			go drillingTunnel(src, dst)
 		}
 	}
 }

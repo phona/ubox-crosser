@@ -7,6 +7,7 @@ import (
 	ss "github.com/shadowsocks/shadowsocks-go/shadowsocks"
 	"net"
 	"os"
+	"ubox-crosser/models/config"
 	"ubox-crosser/models/message"
 	"ubox-crosser/utils/connector"
 )
@@ -21,6 +22,10 @@ type ProxyServer struct {
 	exposerAddr, controllerAddr string
 
 	cipher *ss.Cipher
+}
+
+func _NewProxyServer(configs []config.ServerConfig) *ProxyServer {
+	return nil
 }
 
 func NewProxyServer(exposerAddr, exposerPass, controllerAddr, controllerPass string, cipher *ss.Cipher) *ProxyServer {

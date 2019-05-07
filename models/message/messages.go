@@ -4,6 +4,7 @@ const (
 	LOGIN = iota
 	HEART_BEAT
 	GEN_WORKER
+	AUTHENTICATION
 
 	SUCCESS
 	FAILED
@@ -11,6 +12,7 @@ const (
 
 type Message struct {
 	Type     int64  `json:"type"`
+	Username string `json:"username"`
 	Password string `json:"password"`
 }
 

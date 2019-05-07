@@ -11,11 +11,11 @@ const (
 )
 
 type Message struct {
-	Type     int64  `json:"type"`
-	Username string `json:"username"`
-	Password string `json:"password"`
+	Type      int64  `json:"type"`
+	ServeName string `json:"serve_name"`
+	Password  string `json:"password"`
 }
 
 type ResultMessage struct {
-	Result int64 `json:"type"`
+	Result int64 `json:"result"`
 }

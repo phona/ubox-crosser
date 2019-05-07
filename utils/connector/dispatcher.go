@@ -2,12 +2,15 @@ package connector
 
 import (
 	"net"
+	"sync"
 )
 
 type Dispatcher struct {
 	listeners []net.Listener
 	errs      chan error
 	conns     chan net.Conn
+
+	mutex sync.Mutex
 }
 
 func NewDispatcher(size uint64) *Dispatcher {
@@ -19,7 +22,9 @@ func NewDispatcher(size uint64) *Dispatcher {
 }
 
 func (d *Dispatcher) Add(listener net.Listener) {
+	d.mutex.Lock()
 	d.listeners = append(d.listeners, listener)
+	d.mutex.Unlock()
 	go d.listen(listener)
 }
 

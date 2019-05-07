@@ -6,7 +6,6 @@ import (
 	log "github.com/Sirupsen/logrus"
 	ss "github.com/shadowsocks/shadowsocks-go/shadowsocks"
 	"net"
-	"os"
 	"ubox-crosser/models/config"
 	"ubox-crosser/models/message"
 	"ubox-crosser/utils/connector"
@@ -15,112 +14,147 @@ import (
 // for opening a listener to proxy request
 type ProxyServer struct {
 	// generated from client
-	listener   *net.Listener
-	controller *Controller
 
-	exposerPass, controllerPass string
-	exposerAddr, controllerAddr string
+	dispatcher  *connector.Dispatcher
+	controllers map[string]*Controller
+	errs        chan error
 
-	cipher *ss.Cipher
+	context map[string]config.ServerConfig
+	// exposers    map[string]*Exposer
 }
 
-func _NewProxyServer(configs []config.ServerConfig) *ProxyServer {
-	return nil
-}
-
-func NewProxyServer(exposerAddr, exposerPass, controllerAddr, controllerPass string, cipher *ss.Cipher) *ProxyServer {
-	return &ProxyServer{
-		exposerPass:    exposerPass,
-		exposerAddr:    exposerAddr,
-		controllerPass: controllerPass,
-		controllerAddr: controllerAddr,
-		cipher:         cipher,
+func NewProxyServer(configs map[string]config.ServerConfig) *ProxyServer {
+	total := len(configs)
+	dispatcher := connector.NewDispatcher(uint64(total))
+	listenedAddr := make([]string, 0, total)
+	server := &ProxyServer{
+		dispatcher:  dispatcher,
+		controllers: make(map[string]*Controller, total),
+		errs:        make(chan error, 10),
+		context:     configs,
 	}
-}
 
-func (p *ProxyServer) Run() {
-	log.Infof("Exposer listen on %s, Controller listen on %s", p.exposerAddr, p.controllerAddr)
-	go p.runExposer()
-	p.runController()
-}
-
-func (p *ProxyServer) runExposer() {
-	if listener, err := net.Listen("tcp", p.exposerAddr); err != nil {
-		log.Fatalln(err)
-		os.Exit(0)
-	} else {
-		p.listener = &listener
-		for {
-			conn, err := listener.Accept()
-			if err != nil {
-				log.Fatalln(err)
-				continue
-			}
-			log.Info("get a new request")
-			go p.handleExposerConn(conn)
-		}
+	for _, config_ := range configs {
+		go server.initWorker(listenedAddr, config_)
 	}
+	return server
 }
 
-func (p *ProxyServer) handleExposerConn(src net.Conn) {
-	if p.exposerPass == "" {
-		dst, err := p.controller.GetConn()
-		if err != nil {
-			log.Error(err)
-			src.Close()
+func (p *ProxyServer) initWorker(listenedAddr []string, serverConfig config.ServerConfig) {
+	// deduplicate address
+	for _, addr := range listenedAddr {
+		if addr == serverConfig.Address {
 			return
 		}
-		go drillingTunnel(src, dst)
-		return
 	}
 
-	if p.cipher != nil {
-		src = ss.NewConn(src, p.cipher.Copy())
+	var cipher *ss.Cipher
+	if serverConfig.Method != "" {
+		if err := ss.CheckCipherMethod(serverConfig.Method); err != nil {
+			p.errs <- err
+			return
+		} else if cipher, err = ss.NewCipher(serverConfig.Method, serverConfig.Key); err != nil {
+			p.errs <- err
+			return
+		}
 	}
+
+	if l, err := net.Listen("tcp", serverConfig.Address); err != nil {
+		p.errs <- err
+	} else {
+		p.dispatcher.Add(connector.NewCipherListener(l, cipher))
+	}
+}
+
+func (p *ProxyServer) Err() error {
+	select {
+	case err := <-p.errs:
+		return err
+	default:
+		return p.dispatcher.Err()
+	}
+}
+
+func (p *ProxyServer) Process() {
+	// log.Infof("Exposer listen on %s, Controller listen on %s", p.exposerAddr, p.controllerAddr)
+	for {
+		conn := p.dispatcher.Conn()
+		go p.handleConnection(conn)
+	}
+}
+
+func (p *ProxyServer) handleConnection(conn net.Conn) {
+	coordinator := connector.AsCoordinator(conn)
 
 	var reqMsg message.Message
-	coordinator := connector.AsCoordinator(src)
+	if content, err := coordinator.ReadMsg(); err != nil {
+		p.errs <- err
+	} else if err := json.Unmarshal([]byte(content), &reqMsg); err != nil {
+		p.errs <- err
+	} else {
+		var handleErr = func(err error) {
+			p.errs <- err
+			conn.Close()
+		}
+		switch reqMsg.Type {
+		case message.LOGIN:
+			if context, ok := p.context[reqMsg.ServeName]; !ok {
+				handleErr(fmt.Errorf("Unknown serve %s were received", reqMsg.ServeName))
+			} else if reqMsg.Password == context.LoginPass {
+				controller := NewController(coordinator)
+				p.controllers[reqMsg.ServeName] = controller
+				controller.daemonize()
+			} else {
+				handleErr(fmt.Errorf("Error Receving invalid login password request %+v", reqMsg))
+			}
+		case message.GEN_WORKER:
+			if controller, ok := p.controllers[reqMsg.ServeName]; !ok {
+				handleErr(fmt.Errorf("Controller for %s does not alive", reqMsg.ServeName))
+			} else {
+				controller.HandleConnection(conn)
+			}
+		case message.AUTHENTICATION:
+			p.handleAuthRequest(reqMsg.ServeName, reqMsg.Password, coordinator)
+		default:
+			handleErr(fmt.Errorf("Unknown type %s were received", reqMsg.Type))
+		}
+	}
+}
+
+func (p *ProxyServer) handleAuthRequest(serveName, authPass string, coordinator *connector.Coordinator) {
 	var errFunc = func(err error) {
 		var respMsg message.ResultMessage
 		respMsg.Result = message.FAILED
 		buf, _ := json.Marshal(respMsg)
 		coordinator.SendMsg(string(buf))
-		src.Close()
+		coordinator.Close()
 		log.Errorf("Error handling connection in proxy server: %s", err)
 	}
 
-	if content, err := coordinator.ReadMsg(); err != nil {
-		errFunc(err)
-	} else if err := json.Unmarshal([]byte(content), &reqMsg); err != nil {
-		errFunc(err)
-	} else if reqMsg.Type != message.LOGIN {
-		errFunc(fmt.Errorf("Invalid type %s != %s", message.LOGIN, reqMsg.Type))
-	} else if reqMsg.Password != p.exposerPass {
-		errFunc(fmt.Errorf("Invalid password %s != %s", p.exposerPass, reqMsg.Password))
+	if context, ok := p.context[serveName]; !ok {
+		errFunc(fmt.Errorf("Unknown serve %s were received", serveName))
+	} else if controller, ok := p.controllers[serveName]; !ok {
+		errFunc(fmt.Errorf("Controller for %s does not alive", serveName))
 	} else {
-		var simpleErrHandle = func(err error) {
-			src.Close()
-			log.Errorf("Error handling connection in proxy server: %s", err)
-		}
-
-		var respMsg message.ResultMessage
-		respMsg.Result = message.SUCCESS
-		buf, _ := json.Marshal(respMsg)
-		if err := coordinator.SendMsg(string(buf)); err != nil {
-			simpleErrHandle(err)
-		} else if p.controller == nil {
-			simpleErrHandle(fmt.Errorf("The controller of proxy server is null."))
-		} else if dst, err := p.controller.GetConn(); err != nil {
-			simpleErrHandle(err)
+		if authPass != context.AuthPass {
+			errFunc(fmt.Errorf("Invalid password %s != %s", context.AuthPass, authPass))
 		} else {
-			go drillingTunnel(src, dst)
+			var simpleErrHandle = func(err error) {
+				coordinator.Close()
+				log.Errorf("Error handling connection in proxy server: %s", err)
+			}
+
+			respMsg := message.ResultMessage{message.SUCCESS}
+			buf, _ := json.Marshal(respMsg)
+			if err := coordinator.SendMsg(string(buf)); err != nil {
+				simpleErrHandle(err)
+			} else if workConn, err := controller.GetConn(); err != nil {
+				simpleErrHandle(err)
+			} else {
+				go drillingTunnel(coordinator.Conn, workConn)
+			}
 		}
 	}
-}
-
-func (p *ProxyServer) runController() {
-	p.controller = NewController(p.controllerAddr, p.controllerPass, p.cipher.Copy())
-	p.controller.Run()
 }
 
 func testSocks5Req(src, dst net.Conn) {

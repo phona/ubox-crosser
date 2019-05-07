@@ -22,10 +22,9 @@ type ClientConfig struct {
 }
 
 type ServerConfig struct {
-	ControllerPass    string `json:"controller_password"`
-	ExposerPass       string `json:"exposer_password"`
-	ControllerAddress string `json:"controller_address"`
-	ExposerAddress    string `json:"expose_address"`
+	LoginPass string `json:"login_password"`
+	AuthPass  string `json:"auth_password"`
+	Address   string `json:"address"`
 	Config
 }
 

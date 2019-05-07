@@ -18,7 +18,7 @@ type ServerConfig struct {
 	ControllerPass    string `json:"controller_password"`
 	ExposerPass       string `json:"exposer_password"`
 	ControllerAddress string `json:"controller_address"`
-	ExposeAddress     string `json:"expose_address"`
+	ExposerAddress    string `json:"expose_address"`
 	Config
 }
 

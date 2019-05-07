@@ -19,7 +19,7 @@ func main() {
 		Run: func(cmd *cobra.Command, args []string) {
 			if cmdConfig.TargetAddress == "" {
 				cmd.Help()
-				fmt.Println("control channel address can't be empty")
+				fmt.Println("target address can't be empty")
 				os.Exit(0)
 			} else if cmdConfig.Method != "" && cmdConfig.Key == "" {
 				cmd.Help()

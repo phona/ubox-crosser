@@ -9,6 +9,7 @@ import (
 	"net"
 	"sync"
 	"time"
+	"ubox-crosser/models/errors"
 	"ubox-crosser/models/message"
 	"ubox-crosser/utils/connector"
 )
@@ -24,7 +25,7 @@ type Controller struct {
 	ctlConn        *connector.Coordinator
 	heartBeatTimer *time.Timer
 
-	Password string
+	ServeName, Password string
 
 	// this property can be abstracted
 	sessionLayer *socks5.Server
@@ -32,7 +33,7 @@ type Controller struct {
 	mutex        sync.Mutex
 }
 
-func NewController(address string, server *socks5.Server, cipher *ss.Cipher, password string) *Controller {
+func NewController(address, serveName, password string, server *socks5.Server, cipher *ss.Cipher) *Controller {
 	return &Controller{
 		Address:        address,
 		ctlConn:        nil,
@@ -40,6 +41,7 @@ func NewController(address string, server *socks5.Server, cipher *ss.Cipher, pas
 		sessionLayer:   server,
 		cipher:         cipher,
 		Password:       password,
+		ServeName:      serveName,
 	}
 }
 
@@ -56,7 +58,11 @@ func (c *Controller) Run() {
 				if err == nil {
 					break
 				} else {
-					log.Error("Error in login: %s", err)
+					log.Errorf("Error in login: %s", err)
+					if _, ok := err.(errors.Error); ok {
+						return
+					}
+
 					if sleepTime < 60 {
 						sleepTime = sleepTime * 2
 					}
@@ -100,12 +106,11 @@ func (c *Controller) handleMessage() {
 }
 
 func (c *Controller) newWorkConn() {
-	var reqMsg message.Message
 	if workConn, err := c.getConn(); err != nil {
 		log.Error("Error generating a worker ", err)
 	} else {
 		defer workConn.Close()
-		reqMsg.Type = message.GEN_WORKER
+		reqMsg := message.Message{Type: message.GEN_WORKER, Password: c.Password, ServeName: c.ServeName}
 		buf, _ := json.Marshal(reqMsg)
 		// add this connection to server workers pool
 		if err := workConn.SendMsg(string(buf)); err != nil {
@@ -149,12 +154,17 @@ func (c *Controller) login() error {
 		return err
 	}
 
-	reqMsg := message.Message{Type: message.LOGIN, Password: c.Password}
+	var respMsg message.ResultMessage
+	reqMsg := message.Message{Type: message.LOGIN, Password: c.Password, ServeName: c.ServeName}
 	buf, _ := json.Marshal(reqMsg)
-	err = controlConn.SendMsg(string(buf))
-	if err != nil {
-		log.Errorf("Control connection construct failed: %s", err)
+	if err = controlConn.SendMsg(string(buf)); err != nil {
 		return err
+	} else if content, err := controlConn.ReadMsg(); err != nil {
+		return err
+	} else if err := json.Unmarshal([]byte(content), &respMsg); err != nil {
+		return err
+	} else if respMsg.Result != message.SUCCESS {
+		return respMsg.Reason
 	}
 	// login success
 	go c.startHeartBeat(controlConn)

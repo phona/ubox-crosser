@@ -12,14 +12,14 @@ import (
 )
 
 type AuthServer struct {
-	targetAddress string
-	password      string
-	cipher        *ss.Cipher
+	targetAddress, serveName, password string
+	cipher                             *ss.Cipher
 }
 
-func NewAuthServer(targetAddress, password string, cipher *ss.Cipher) *AuthServer {
+func NewAuthServer(targetAddress, serveName, password string, cipher *ss.Cipher) *AuthServer {
 	return &AuthServer{
 		targetAddress: targetAddress,
+		serveName:     serveName,
 		password:      password,
 		cipher:        cipher,
 	}
@@ -36,7 +36,7 @@ func (a *AuthServer) Listen(address string) {
 				log.Fatalln(err)
 				continue
 			}
-			log.Info("get a new request")
+			log.Infof("Get a new request from remote client %s", conn.RemoteAddr().String())
 			go a.handleConnection(conn)
 		}
 	}
@@ -61,8 +61,9 @@ func (a *AuthServer) getConn() (net.Conn, error) {
 	} else {
 		var respMsg message.ResultMessage
 		reqMsg := message.Message{
-			Type:     message.LOGIN,
-			Password: a.password,
+			Type:      message.AUTHENTICATION,
+			Password:  a.password,
+			ServeName: a.serveName,
 		}
 
 		if a.cipher != nil {
@@ -72,7 +73,7 @@ func (a *AuthServer) getConn() (net.Conn, error) {
 		buf, _ := json.Marshal(reqMsg)
 
 		var errFunc = func(e error) (net.Conn, error) {
-			conn.Close()
+			coordinator.Close()
 			return nil, e
 		}
 
@@ -88,7 +89,7 @@ func (a *AuthServer) getConn() (net.Conn, error) {
 		case message.SUCCESS:
 			return conn, nil
 		case message.FAILED:
-			return errFunc(fmt.Errorf("Login failure"))
+			return errFunc(fmt.Errorf("Login failure: %s", respMsg.Reason))
 		default:
 			return errFunc(fmt.Errorf("Invalid status code %s", respMsg.Result))
 		}

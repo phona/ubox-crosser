@@ -17,7 +17,7 @@ type Config struct {
 type ClientConfig struct {
 	LoginPassword string `json:"login_password"`
 	TargetAddress string `json:"target_address"`
-	Name          string `json:"name"`
+	ServeName     string `json:"serve_name"`
 	Config
 }
 
@@ -30,7 +30,6 @@ type ServerConfig struct {
 
 type AuthServerConfig struct {
 	ExposeAddress string `json:"expose_address"`
-	Name          string `json:"name"`
 	ClientConfig
 }
 
@@ -52,7 +51,6 @@ func (old *Config) Update(new interface{}) error {
 				continue
 			}
 			newVal := reflect.ValueOf(val)
-			fmt.Println("KV Pair: ", oldTField.Tag.Get("json"), oldVField.String(), oldVField.Kind())
 			switch oldVField.Kind() {
 			case reflect.Interface:
 				if fmt.Sprintf("%v", val) != "" {

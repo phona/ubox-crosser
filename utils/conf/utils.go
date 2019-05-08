@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 	"io/ioutil"
 	"os"
+	"ubox-crosser/models/config"
 )
 
 func ParseConfigFile(filePath string, config interface{}) error {
@@ -27,12 +28,27 @@ func ParseConfigFile(filePath string, config interface{}) error {
 	}
 }
 
-func ParseServerConfigFile(filePath string, config interface{}) error {
-	rootConfig := map[string]interface{}{}
+var CommonConfigName = "common"
+
+func ParseServerConfigFile(filePath string) (map[string]config.ServerConfig, error) {
+	rootConfig := make(map[string]config.ServerConfig, 10)
 	if err := ParseConfigFile(filePath, &rootConfig); err != nil {
-		return err
+		return rootConfig, err
 	}
 
+	if common, ok := rootConfig[CommonConfigName]; ok {
+		for k, v := range rootConfig {
+			if k != CommonConfigName {
+				newConfig := common
+				if err := newConfig.Update(v); err != nil {
+					return rootConfig, err
+				} else {
+					rootConfig[k] = newConfig
+				}
+			}
+		}
+	}
+	return rootConfig, nil
 }
 
 func CmdErrHandle(cmd *cobra.Command, msg ...interface{}) {

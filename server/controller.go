@@ -8,19 +8,19 @@ import (
 	"ubox-crosser/utils/connector"
 )
 
-type Controller struct {
+type controller struct {
 	conn     *connector.Coordinator
 	workConn chan net.Conn
 }
 
-func NewController(conn *connector.Coordinator) *Controller {
-	return &Controller{
+func newController(conn *connector.Coordinator) *controller {
+	return &controller{
 		conn:     conn,
 		workConn: make(chan net.Conn, 10),
 	}
 }
 
-func (c *Controller) GetConn() (net.Conn, error) {
+func (c *controller) getConn() (net.Conn, error) {
 	reqMessage := message.Message{Type: message.GEN_WORKER}
 	buf, _ := json.Marshal(reqMessage)
 	for {
@@ -34,7 +34,7 @@ func (c *Controller) GetConn() (net.Conn, error) {
 	}
 }
 
-func (c *Controller) daemonize() {
+func (c *controller) daemonize() {
 	// a connected control connection only can receive a heartbeat
 	var reqMsg message.Message
 	for {
@@ -56,26 +56,6 @@ func (c *Controller) daemonize() {
 			default:
 				log.Errorf("Unknown type %s were received", reqMsg.Type)
 			}
-		}
-	}
-}
-
-func (c *Controller) HandleConnection(conn net.Conn) {
-	coordinator := connector.AsCoordinator(conn)
-	var reqMessage message.Message
-	if content, err := coordinator.ReadMsg(); err != nil {
-		log.Error("Error receiving content: ", err)
-		coordinator.Close()
-	} else if err := json.Unmarshal([]byte(content), &reqMessage); err != nil {
-		log.Errorf("Error Unmarshal content %s: %s", content, err)
-	} else {
-		log.Debugf("Received content: %s", content)
-		switch reqMessage.Type {
-		case message.GEN_WORKER:
-			c.workConn <- coordinator.Conn
-			log.Debug("Add new work connection")
-		default:
-			log.Errorf("Unknown type %s were received", reqMessage.Type)
 		}
 	}
 }

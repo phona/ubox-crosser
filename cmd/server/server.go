@@ -8,6 +8,7 @@ import (
 	"os"
 	"ubox-crosser/log"
 	"ubox-crosser/models/config"
+	"ubox-crosser/server"
 	"ubox-crosser/utils/conf"
 )
 
@@ -16,18 +17,45 @@ func main() {
 	cmd := &cobra.Command{
 		Use: "UBox-crosser server",
 		Run: func(cmd *cobra.Command, args []string) {
-			var fileConfig config.ServerConfig
-			if err := conf.ParseConfigFile(cmdConfig.ConfigFile, &fileConfig); err != nil {
+			var configs map[string]config.ServerConfig
+			var err error
+			if configs, err = conf.ParseServerConfigFile(cmdConfig.ConfigFile); err != nil {
 				conf.CmdErrHandle(cmd, err)
-			} else if err := (&cmdConfig).Update(fileConfig); err != nil {
-				conf.CmdErrHandle(cmd, err)
+			} else if len(configs) == 0 {
+				log.InitLog(cmdConfig.LogFile, cmdConfig.LogLevel)
+				configs["default"] = cmdConfig
+				content, _ := json.Marshal(cmdConfig)
+				logrus.Infoln("Using configuration from command line")
+				logrus.Infof("Config init: %s", content)
+			} else if commonConfig, ok := configs[conf.CommonConfigName]; ok {
+				log.InitLog(commonConfig.LogFile, commonConfig.LogLevel)
+				content, _ := json.Marshal(configs)
+				logrus.Infoln("Using configuration from configure file")
+				logrus.Infof("Config init: %s", content)
+			} else {
+				log.InitLog("", "")
+				content, _ := json.Marshal(configs)
+				logrus.Infoln("Log file and log level no defined, use default mode")
+				logrus.Infoln("Using configuration from configure file")
+				logrus.Infof("Config init: %s", content)
 			}
+			proxy := server.NewProxyServer(configs)
+			go proxy.Process()
+			func() {
+				for {
+					logrus.Errorln(proxy.Err())
+				}
+			}()
 
-			if cmdConfig.Address == "" {
-				conf.CmdErrHandle(cmd, "Address can't be empty")
-			} else if cmdConfig.Method != "" && cmdConfig.Key == "" {
-				conf.CmdErrHandle(cmd, "Password can't be empty")
-			}
+			//if err := (&cmdConfig).Update(fileConfig); err != nil {
+			//	conf.CmdErrHandle(cmd, err)
+			//}
+
+			//if cmdConfig.Address == "" {
+			//	conf.CmdErrHandle(cmd, "Address can't be empty")
+			//} else if cmdConfig.Method != "" && cmdConfig.Key == "" {
+			//	conf.CmdErrHandle(cmd, "Password can't be empty")
+			//}
 
 			//var cipher *shadowsocks.Cipher
 			//if cmdConfig.Method != "" {
@@ -38,9 +66,6 @@ func main() {
 			//	}
 			//}
 
-			log.InitLog(cmdConfig.LogFile, cmdConfig.LogLevel)
-			content, _ := json.Marshal(cmdConfig)
-			logrus.Infof("Config init: %s", content)
 			//proxy := server.NewProxyServer(cmdConfig.ExposerAddress, cmdConfig.ExposerPass,
 			//	cmdConfig.ControllerAddress, cmdConfig.ControllerPass, cipher)
 			//proxy.Run()

@@ -8,6 +8,10 @@ import (
 func InitLog(logFile string, logLevel string) {
 	SetLogFile(logFile)
 	SetLogLevel(logLevel)
+	log.SetFormatter(&log.TextFormatter{
+		DisableTimestamp: false,
+		FullTimestamp:    true,
+	})
 }
 
 // logWay: such as file or console
@@ -39,7 +43,7 @@ func SetLogLevel(logLevel string) {
 	case "debug":
 		level = log.DebugLevel
 	default:
-		level = log.WarnLevel
+		level = log.DebugLevel
 	}
 
 	log.SetLevel(level)

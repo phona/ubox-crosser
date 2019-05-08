@@ -1,0 +1,19 @@
+{
+	"common": {
+		"key": "123456",
+		"method": "chacha20",
+		"address": "127.0.0.1:7000",
+		"login_password": "123456",
+		"auth_password": "123456",
+		"log_file": "",
+		"log_level": "info"
+	},
+
+	"UBox_cytm": {
+		"key": "67890"
+	},
+
+	"UBox_ylxy": {
+
+	}
+}

@@ -1,0 +1,9 @@
+{
+	"key": "123456",
+	"method": "chacha20",
+	"target_address": "127.0.0.1:7000",
+	"expose_address": "127.0.0.1:7002",
+	"login_password": "123456",
+	"log_level": "info",
+	"serve_name": "UBox_cytm"
+}

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"time"
 )
 
 type Config struct {
@@ -29,13 +30,12 @@ type ServerConfig struct {
 }
 
 type CCPConfig struct {
-	LoginPass string `json:"login_password"`
-	Key       string `json:"key"`
-	Method    string `json:"method"`
-	MaxTry    uint8  `json:"max_try"`
-
-	Address        string `json:"address"`
-	ReqBindAddress string `json:"request_bind_address"`
+	LoginPass string        `json:"login_password"`
+	Key       string        `json:"key"`
+	Method    string        `json:"method"`
+	MaxTry    uint8         `json:"max_try"`
+	Timeout   time.Duration `json:"timeout"`
+	Address   string        `json:"address"`
 }
 
 type AuthServerConfig struct {

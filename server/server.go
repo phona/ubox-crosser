@@ -112,7 +112,7 @@ func (p *ProxyServer) handleConnection(conn net.Conn) {
 		case message.AUTHENTICATION:
 			p.handleAuthRequest(reqMsg.ServeName, reqMsg.Password, coordinator)
 		default:
-			p.handleConnErr(coordinator, fmt.Errorf("Unknown type %s were received", reqMsg.Type), errors.UNKNOWN_CODE)
+			p.handleConnErr(coordinator, fmt.Errorf("Unknown type %d were received", reqMsg.Type), errors.UNKNOWN_CODE)
 		}
 	}
 }

@@ -63,7 +63,7 @@ func NewProtocol(conn net.Conn, cipher *shadowsocks.Cipher) *CcpProtocol {
 }
 
 func (p *CcpProtocol) Send(message Message) error {
-	buf := make([]byte, 0, 1+len(message.Data))
+	buf := make([]byte, 1+len(message.Data))
 	buf[0] = byte(message.Class)
 	for i, _ := range message.Data {
 		buf[i+1] = message.Data[i]

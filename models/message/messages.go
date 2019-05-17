@@ -9,11 +9,6 @@ const (
 	AUTHENTICATION
 
 	SUCCESS
-	FAILED
-
-	REQUEST
-	RESPONSE_SUCCESS
-	RESPONSE_ERROR
 )
 
 type Message struct {

@@ -48,7 +48,7 @@ type p2pFullConeNatMode struct {
 }
 
 func newP2pFullConeNatMode(address, password string, cipher *shadowsocks.Cipher) (*p2pFullConeNatMode, error) {
-	if err := handShake(address, password, cipher.Copy(), nil); err != nil {
+	if err := handShake(address, password, cipher, nil); err != nil {
 		return nil, err
 	} else {
 		return &p2pFullConeNatMode{}, nil
@@ -90,7 +90,7 @@ func newP2pAddrRestrictedConeNatMode(address, password string, cipher *shadowsoc
 			return nil
 		}
 	}
-	if err := handShake(address, password, cipher.Copy(), sub); err != nil {
+	if err := handShake(address, password, cipher, sub); err != nil {
 		return nil, err
 	} else {
 		return &p2pAddrRestrictedConeNatMode{}, nil
@@ -123,13 +123,13 @@ func (*p2pAddrRestrictedConeNatMode) GetConn(addr string) (net.Conn, error) {
  * remote_add is remote upd server address
  */
 func GetConnectMode(address, password string, cipher *shadowsocks.Cipher) (ConnectMode, error) {
-	if mode2, err := newP2pFullConeNatMode(address, password, cipher.Copy()); err != nil {
+	if mode2, err := newP2pFullConeNatMode(address, password, cipher); err != nil {
 		log.Errorf("Full-cone NAT doesn't supported: %s", err)
 	} else {
 		return mode2, nil
 	}
 
-	if mode1, err := newP2pAddrRestrictedConeNatMode(address, password, cipher.Copy()); err != nil {
+	if mode1, err := newP2pAddrRestrictedConeNatMode(address, password, cipher); err != nil {
 		log.Errorf("(Address)-restricted-cone NAT doesn't supported: %s", err)
 	} else {
 		return mode1, nil
@@ -148,27 +148,27 @@ func handShake(address, password string,
 	}
 
 	ccpProtocol := ccp.NewProtocol(conn, cipher)
-	if err := ccpProtocol.Send(ccp.Message{
+	if err = ccpProtocol.Send(ccp.Message{
 		ccp.REQUEST_AUTH,
 		utils.MakeJsonBuf(ccp.AuthRequest{password}),
 		"",
 	}); err != nil {
-		return
+		return err
 	} else if respMsg, err := ccpProtocol.Receive(); err != nil {
-		return
+		return err
 	} else {
 		if respMsg.Err != "" {
 			err = fmt.Errorf(respMsg.Err)
-			return
+			return err
 		}
 
 		var respAuthMsg ccp.AuthResponse
 		if err = json.Unmarshal(respMsg.Data, &respAuthMsg); err != nil {
-			return
+			return err
 		} else {
 			if subroutine != nil {
 				if err := subroutine(conn.LocalAddr().String(), respAuthMsg); err != nil {
-					return
+					return err
 				}
 			}
 			if err := ccpProtocol.Send(ccp.Message{
@@ -181,14 +181,18 @@ func handShake(address, password string,
 				return err
 			}
 
-			pc, err := net.ListenPacket("udp", address)
+			pc, err := net.ListenPacket("udp", conn.LocalAddr().String())
+			log.Infof("handShake:> Listen udp on %s", conn.LocalAddr().String())
 			if err != nil {
 				return err
-			} else if _, addr, err := pc.ReadFrom([]byte{}); err != nil {
+			} else if _, addr, err := pc.ReadFrom([]byte{0}); err != nil {
 				return err
 			} else {
+				defer pc.Close()
 				log.Infof("Received packet from %s", addr.String())
-				pc.Close()
+				if _, err := pc.WriteTo([]byte{0}, addr); err != nil {
+					return err
+				}
 				return nil
 			}
 		}

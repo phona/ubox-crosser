@@ -8,14 +8,8 @@ all: $(SOURCES)
 	cd cmd/client; go install
 	@echo "Building $@ ..."
 	cd cmd/server; go install
-	
+	@echo "Building $@ ..."
+	cd cmd/auth_server; go install
+
 clean: 
 	rm -f $(BIN_PATH)/linux_amd64/client $(BIN_PATH)/linux_amd64/server
-
-client: $(SOURCES) cmd/client/client.go
-	@echo "Building $@ ..."
-	cd cmd/client; go install
-
-server: $(SOURCES) cmd/server/server.go
-	@echo "Building $@ ..."
-	cd cmd/server; go install

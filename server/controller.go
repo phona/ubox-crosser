@@ -16,7 +16,7 @@ type controller struct {
 func newController(conn *connector.Coordinator) *controller {
 	return &controller{
 		conn:     conn,
-		workConn: make(chan net.Conn, 10),
+		workConn: make(chan net.Conn, DEFAULT_SERVES),
 	}
 }
 

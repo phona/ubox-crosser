@@ -31,7 +31,7 @@ func NewProxyServer(configs map[string]config.ServerConfig) *ProxyServer {
 	server := &ProxyServer{
 		dispatcher:  dispatcher,
 		controllers: make(map[string]*controller, total),
-		errs:        make(chan error, 10),
+		errs:        make(chan error, DEFAULT_SERVES),
 		context:     configs,
 	}
 
@@ -121,7 +121,7 @@ func (p *ProxyServer) handleLoginRequest(serveName, loginPass string, coordinato
 	if context, ok := p.context[serveName]; !ok {
 		p.handleConnErr(coordinator, fmt.Errorf("Unknown serve %s were received", serveName), errors.INVALID_SERVE_NAME)
 	} else if loginPass == context.LoginPass {
-		respMsg := message.ResultMessage{message.SUCCESS, errors.OK}
+		respMsg := message.ResultMessage{errors.OK}
 		content, _ := json.Marshal(respMsg)
 		if err := coordinator.SendMsg(string(content)); err != nil {
 			p.errs <- err
@@ -151,7 +151,7 @@ func (p *ProxyServer) handleAuthRequest(serveName, authPass string, coordinator 
 				p.errs <- err
 			}
 
-			respMsg := message.ResultMessage{message.SUCCESS, errors.OK}
+			respMsg := message.ResultMessage{errors.OK}
 			buf, _ := json.Marshal(respMsg)
 			if err := coordinator.SendMsg(string(buf)); err != nil {
 				simpleErrHandle(err)
@@ -166,7 +166,7 @@ func (p *ProxyServer) handleAuthRequest(serveName, authPass string, coordinator 
 
 func (p *ProxyServer) handleConnErr(coordinator *connector.Coordinator, err error, cErr errors.Error) {
 	p.errs <- err
-	respMsg := message.ResultMessage{message.FAILED, cErr}
+	respMsg := message.ResultMessage{cErr}
 	content, _ := json.Marshal(respMsg)
 	coordinator.SendMsg(string(content))
 	coordinator.Close()

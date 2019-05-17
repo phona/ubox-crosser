@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 	"os"
 	"ubox-crosser/client"
+	"ubox-crosser/client/mode"
 	"ubox-crosser/log"
 	"ubox-crosser/models/config"
 	"ubox-crosser/utils/conf"
@@ -43,7 +44,11 @@ func main() {
 			log.InitLog(fileConfig.LogFile, fileConfig.LogLevel)
 			content, _ := json.Marshal(fileConfig)
 			logrus.Infof("Config init: %s", content)
-			cli := client.NewClient(cipher)
+			connectMode, err := mode.GetConnectMode(fileConfig.TargetAddress, fileConfig.LoginPassword, cipher.Copy())
+			if err != nil {
+				conf.CmdErrHandle(cmd, err)
+			}
+			cli := client.NewClient(connectMode, cipher)
 			if err := cli.Connect(fileConfig.TargetAddress, fileConfig.ServeName, fileConfig.LoginPassword); err != nil {
 				conf.CmdErrHandle(cmd, err)
 			}

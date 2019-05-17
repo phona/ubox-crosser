@@ -28,6 +28,16 @@ type ServerConfig struct {
 	Config
 }
 
+type CCPConfig struct {
+	LoginPass string `json:"login_password"`
+	Key       string `json:"key"`
+	Method    string `json:"method"`
+	MaxTry    uint8  `json:"max_try"`
+
+	Address        string `json:"address"`
+	ReqBindAddress string `json:"request_bind_address"`
+}
+
 type AuthServerConfig struct {
 	ExposeAddress string `json:"expose_address"`
 	ClientConfig

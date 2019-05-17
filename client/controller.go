@@ -3,7 +3,6 @@ package client
 import (
 	"encoding/json"
 	log "github.com/Sirupsen/logrus"
-	"github.com/armon/go-socks5"
 	ss "github.com/shadowsocks/shadowsocks-go/shadowsocks"
 	"io"
 	"net"
@@ -15,8 +14,8 @@ import (
 )
 
 var (
-	HeartBeatInterval int64 = 5
-	HeartBeatTimeout  int64 = 30
+	HeartBeatInterval int64 = 10
+	HeartBeatTimeout  int64 = 120
 )
 
 // control channel for communicate with proxy server
@@ -28,20 +27,21 @@ type Controller struct {
 	ServeName, Password string
 
 	// this property can be abstracted
-	sessionLayer *socks5.Server
-	cipher       *ss.Cipher
-	mutex        sync.Mutex
+	cipher *ss.Cipher
+	mutex  sync.Mutex
+
+	messages chan message.Message
 }
 
-func NewController(address, serveName, password string, server *socks5.Server, cipher *ss.Cipher) *Controller {
+func NewController(address, serveName, password string, cipher *ss.Cipher) *Controller {
 	return &Controller{
 		Address:        address,
 		ctlConn:        nil,
 		heartBeatTimer: nil,
-		sessionLayer:   server,
 		cipher:         cipher,
 		Password:       password,
 		ServeName:      serveName,
+		messages:       make(chan message.Message, 10),
 	}
 }
 
@@ -91,35 +91,11 @@ func (c *Controller) handleMessage() {
 			// distribute respMsg to different handler
 			log.Infof("Received content: %s", content)
 			switch respMsg.Type {
-			case message.GEN_WORKER:
-				// get a generating worker request
-				// open a new tcp connection
-				go c.newWorkConn()
 			case message.HEART_BEAT:
 				// a heart beat
 				log.Infof("Received a heart beat from %s", c.ctlConn.Conn.RemoteAddr().String())
 			default:
-				log.Errorf("Unknown type %s were received", respMsg.Type)
-			}
-		}
-	}
-}
-
-func (c *Controller) newWorkConn() {
-	if workConn, err := c.getConn(); err != nil {
-		log.Error("Error generating a worker ", err)
-	} else {
-		defer workConn.Close()
-		reqMsg := message.Message{Type: message.GEN_WORKER, Password: c.Password, ServeName: c.ServeName}
-		buf, _ := json.Marshal(reqMsg)
-		// add this connection to server workers pool
-		if err := workConn.SendMsg(string(buf)); err != nil {
-			log.Infof("Error sending work message to %s in a work connection: %s",
-				c.ctlConn.Conn.RemoteAddr().String(), err)
-		} else {
-			log.Infof("Create a new socks5 work connection, %s", workConn.Conn.LocalAddr())
-			if err := c.sessionLayer.ServeConn(workConn.Conn); err != nil {
-				log.Errorf("Error serving a work connection with socks5 protocol: ", err)
+				c.messages <- respMsg
 			}
 		}
 	}

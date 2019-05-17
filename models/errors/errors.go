@@ -5,12 +5,14 @@ const (
 	INVALID_PASSWORD
 	INVALID_SERVE_NAME
 	UNKNOWN_CODE
+	INVALID_PARAMETERS
 )
 
 func init() {
 	customErrors[INVALID_PASSWORD] = "invalid password"
 	customErrors[INVALID_SERVE_NAME] = "invalid serve name"
 	customErrors[UNKNOWN_CODE] = "unknown code"
+	customErrors[INVALID_PARAMETERS] = "invalid parameters"
 }
 
 var customErrors = map[uint8]string{}

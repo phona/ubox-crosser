@@ -6,7 +6,7 @@ import (
 	"net"
 )
 
-var customLeackyBuf = ss.NewLeakyBuf(2048, 4096)
+var customLeackyBuf = ss.NewLeakyBuf(LEAKY_BUF_COUNT, LEAKY_BUF_SIZE)
 
 func pipeThenClose(src, dst net.Conn) {
 	defer dst.Close()

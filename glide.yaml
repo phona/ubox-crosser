@@ -29,4 +29,5 @@ import:
 - package: github.com/spf13/pflag
   repo: https://github.com/spf13/pflag
   vcs: git
-
+- package: github.com/gortc/stun
+  version: ^1.19.0

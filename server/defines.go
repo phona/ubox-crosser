@@ -1,0 +1,10 @@
+package server
+
+const (
+	DEFAULT_TRY_TIMES = 3
+
+	DEFAULT_SERVES = 10
+
+	LEAKY_BUF_COUNT = 2048
+	LEAKY_BUF_SIZE  = 4096
+)

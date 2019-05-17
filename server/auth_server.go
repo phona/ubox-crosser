@@ -7,6 +7,7 @@ import (
 	ss "github.com/shadowsocks/shadowsocks-go/shadowsocks"
 	"net"
 	"os"
+	"ubox-crosser/models/errors"
 	"ubox-crosser/models/message"
 	"ubox-crosser/utils/connector"
 )
@@ -85,13 +86,9 @@ func (a *AuthServer) getConn() (net.Conn, error) {
 			return errFunc(fmt.Errorf("Error unmarshal data %s: %s", content, err))
 		}
 
-		switch respMsg.Result {
-		case message.SUCCESS:
-			return conn, nil
-		case message.FAILED:
-			return errFunc(fmt.Errorf("Login failure: %s", respMsg.Reason))
-		default:
-			return errFunc(fmt.Errorf("Invalid status code %s", respMsg.Result))
+		if respMsg.Result != errors.OK {
+			return errFunc(respMsg.Result)
 		}
+		return conn, nil
 	}
 }

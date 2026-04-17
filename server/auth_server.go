@@ -91,7 +91,7 @@ func (a *AuthServer) getConn() (net.Conn, error) {
 		case message.FAILED:
 			return errFunc(fmt.Errorf("Login failure: %s", respMsg.Reason))
 		default:
-			return errFunc(fmt.Errorf("Invalid status code %s", respMsg.Result))
+			return errFunc(fmt.Errorf("Invalid status code %d", respMsg.Result))
 		}
 	}
 }

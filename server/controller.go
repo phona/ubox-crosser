@@ -54,7 +54,7 @@ func (c *controller) daemonize() {
 				}
 				log.Debug("Received a heartbeat")
 			default:
-				log.Errorf("Unknown type %s were received", reqMsg.Type)
+				log.Errorf("Unknown type %d were received", reqMsg.Type)
 			}
 		}
 	}

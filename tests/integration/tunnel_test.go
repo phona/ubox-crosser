@@ -28,7 +28,7 @@ var (
 	cipherKey     = getEnv("TEST_CIPHER_KEY", "test-secret-key-123")
 	cipherMethod  = getEnv("TEST_CIPHER_METHOD", "chacha20")
 	loginPassword = getEnv("TEST_LOGIN_PASSWORD", "test-login-pass")
-	authPassword  = getEnv("TEST_AUTH_PASSWORD", "test-auth-pass")
+	_ = getEnv("TEST_AUTH_PASSWORD", "test-auth-pass") // reserved for future auth tests
 	serveName     = getEnv("TEST_SERVE_NAME", "test_service")
 )
 
@@ -190,7 +190,7 @@ func TestAuthServerTunnel(t *testing.T) {
 
 	// Read server choice
 	buf := make([]byte, 2)
-	conn.SetReadDeadline(time.Now().Add(10 * time.Second))
+	_ = conn.SetReadDeadline(time.Now().Add(10 * time.Second))
 	_, err = io.ReadFull(conn, buf)
 	if err != nil {
 		t.Fatalf("failed to read SOCKS5 handshake response: %v", err)
@@ -219,7 +219,7 @@ func TestAuthServerTunnel(t *testing.T) {
 
 	// Read SOCKS5 connect response (at least 10 bytes for IPv4)
 	respBuf := make([]byte, 256)
-	conn.SetReadDeadline(time.Now().Add(10 * time.Second))
+	_ = conn.SetReadDeadline(time.Now().Add(10 * time.Second))
 	n, err := conn.Read(respBuf)
 	if err != nil {
 		t.Fatalf("failed to read SOCKS5 connect response: %v", err)
@@ -243,7 +243,7 @@ func TestAuthServerTunnel(t *testing.T) {
 	}
 
 	// Read HTTP response
-	conn.SetReadDeadline(time.Now().Add(10 * time.Second))
+	_ = conn.SetReadDeadline(time.Now().Add(10 * time.Second))
 	response := make([]byte, 4096)
 	n, err = conn.Read(response)
 	if err != nil && err != io.EOF {

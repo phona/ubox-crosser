@@ -168,15 +168,7 @@ func (p *ProxyServer) handleConnErr(coordinator *connector.Coordinator, err erro
 	p.errs <- err
 	respMsg := message.ResultMessage{Result: message.FAILED, Reason: cErr}
 	content, _ := json.Marshal(respMsg)
-	coordinator.SendMsg(string(content))
+	_ = coordinator.SendMsg(string(content))
 	coordinator.Close()
 }
 
-func testSocks5Req(src, dst net.Conn) {
-	buf := make([]byte, 10)
-	dst.Write([]byte{5, 2, 0, 1})
-	dst.Read(buf)
-	fmt.Println(buf)
-	src.Close()
-	dst.Close()
-}

@@ -3,13 +3,13 @@ package server
 import (
 	"encoding/json"
 	"fmt"
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	ss "github.com/shadowsocks/shadowsocks-go/shadowsocks"
 	"net"
-	"ubox-crosser/models/config"
-	"ubox-crosser/models/errors"
-	"ubox-crosser/models/message"
-	"ubox-crosser/utils/connector"
+	"github.com/phona/ubox-crosser/models/config"
+	"github.com/phona/ubox-crosser/models/errors"
+	"github.com/phona/ubox-crosser/models/message"
+	"github.com/phona/ubox-crosser/utils/connector"
 )
 
 // for opening a listener to proxy request

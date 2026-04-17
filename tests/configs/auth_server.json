@@ -1,0 +1,9 @@
+{
+    "key": "test-secret-key-123",
+    "method": "chacha20",
+    "target_address": "proxy-server:7000",
+    "expose_address": "0.0.0.0:7002",
+    "login_password": "test-auth-pass",
+    "log_level": "debug",
+    "serve_name": "test_service"
+}

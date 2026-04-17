@@ -2,16 +2,16 @@ package client
 
 import (
 	"encoding/json"
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"github.com/armon/go-socks5"
 	ss "github.com/shadowsocks/shadowsocks-go/shadowsocks"
 	"io"
 	"net"
 	"sync"
 	"time"
-	"ubox-crosser/models/errors"
-	"ubox-crosser/models/message"
-	"ubox-crosser/utils/connector"
+	"github.com/phona/ubox-crosser/models/errors"
+	"github.com/phona/ubox-crosser/models/message"
+	"github.com/phona/ubox-crosser/utils/connector"
 )
 
 var (

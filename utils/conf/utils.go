@@ -6,7 +6,7 @@ import (
 	"github.com/spf13/cobra"
 	"io/ioutil"
 	"os"
-	"ubox-crosser/models/config"
+	"github.com/phona/ubox-crosser/models/config"
 )
 
 func ParseConfigFile(filePath string, config interface{}) error {

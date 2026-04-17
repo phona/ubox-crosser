@@ -67,11 +67,25 @@ jobs:
       - name: Docker build (auth_server)
         run: docker build -t ubox-crosser-auth-server --build-arg BINARY=auth_server -f Dockerfile .
 
-      # ── Step 7: Integration test infra verify ──
-      - name: Integration test (docker compose build)
-        run: docker compose -f tests/docker-compose.yml build
+      # ── Step 7: Integration test (full run) ──
+      - name: Integration test (docker compose up)
+        run: |
+          docker compose -f tests/docker-compose.yml up --build --exit-code-from test-runner --timeout 120
+          docker compose -f tests/docker-compose.yml down -v --remove-orphans
 
-      # ── Step 8: Commit go.sum back if generated ──
+      # ── Step 8: SonarQube scan ──
+      - name: SonarQube Scan
+        if: ${{ env.SONAR_TOKEN != '' }}
+        uses: SonarSource/sonarqube-scan-action@v4
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          NODE_TLS_REJECT_UNAUTHORIZED: '0'
+        with:
+          args: >
+            -Dproject.settings=sonar-project.properties
+
+      # ── Step 9: Commit go.sum back if generated ──
       - name: Commit go.sum
         run: |
           if [[ -n $(git diff --name-only) ]] || [[ -n $(git ls-files --others --exclude-standard) ]]; then

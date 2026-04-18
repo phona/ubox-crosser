@@ -8,7 +8,7 @@ BUILD_ID ?= $(shell date +%s)
 # Build Commands
 # ===========================================
 
-.PHONY: build clean fmt vet test
+.PHONY: build clean fmt vet test unit-test unit-test-coverage
 
 build: $(SOURCES)
 	@echo "=== Building binaries ==="
@@ -31,6 +31,17 @@ test:
 	@echo "=== Running Tests ==="
 	go test -v -count=1 ./...
 
+# Run unit tests only (no integration)
+unit-test:
+	@echo "=== Running Unit Tests ==="
+	go test -short -v -count=1 ./...
+
+# Run unit tests with coverage report
+unit-test-coverage:
+	@echo "=== Running Unit Tests with Coverage ==="
+	@mkdir -p $(COVERAGE_DIR)
+	go test -short -v -count=1 -coverprofile=$(COVERAGE_DIR)/unit.out -covermode=set ./...
+
 # ===========================================
 # Code Quality Commands
 # ===========================================
@@ -51,7 +62,23 @@ lint:
 # Integration Testing Commands
 # ===========================================
 
-.PHONY: test-integration test-clean
+.PHONY: test-integration test-clean test-help sonar
+
+test-help:
+	@echo "UBox-Crosser Test Commands"
+	@echo ""
+	@echo "  make unit-test             Run unit tests"
+	@echo "  make unit-test-coverage    Run unit tests with coverage"
+	@echo "  make test-integration      Run integration tests (Docker required)"
+	@echo "  make test-clean            Clean up test containers and volumes"
+	@echo ""
+	@echo "Options:"
+	@echo "  BUILD_ID=<id>              Unique identifier for test run (default: timestamp)"
+
+# Run SonarQube analysis locally
+sonar:
+	@echo "=== Running SonarQube Analysis ==="
+	sonar-scanner -Dproject.settings=sonar-project.properties
 
 test-integration:
 	@echo "=== Running Integration Tests ==="
@@ -92,10 +119,13 @@ ci-setup:
 	go mod download
 	@which golangci-lint > /dev/null 2>&1 || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $$(go env GOPATH)/bin v1.62.2
 
+# Code lint (parallel go vet + golangci-lint, BASE_REV for incremental scan)
 ci-lint:
 	@fail=0; \
-	go vet ./... || fail=1; \
-	golangci-lint run $${BASE_REV:+--new-from-rev=$$BASE_REV} || fail=1; \
+	( go vet ./... ) & pid1=$$!; \
+	( golangci-lint run $${BASE_REV:+--new-from-rev=$$BASE_REV} ) & pid2=$$!; \
+	wait $$pid1 || fail=1; \
+	wait $$pid2 || fail=1; \
 	exit $$fail
 
 ci-unit-test:

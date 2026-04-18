@@ -49,7 +49,7 @@ func (a *AuthServer) handleConnection(src net.Conn) {
 		src.Close()
 		return
 	}
-	go drillingTunnel(src, dst)
+	go drillingTunnel(src, dst, nil)
 }
 
 func (a *AuthServer) getConn() (net.Conn, error) {

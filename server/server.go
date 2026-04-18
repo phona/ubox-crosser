@@ -3,9 +3,13 @@ package server
 import (
 	"encoding/json"
 	"fmt"
+	"sync"
+
 	log "github.com/sirupsen/logrus"
 	ss "github.com/shadowsocks/shadowsocks-go/shadowsocks"
 	"net"
+
+	"github.com/phona/ubox-crosser/api"
 	"github.com/phona/ubox-crosser/models/config"
 	"github.com/phona/ubox-crosser/models/errors"
 	"github.com/phona/ubox-crosser/models/message"
@@ -18,6 +22,7 @@ type ProxyServer struct {
 
 	dispatcher  *connector.Dispatcher
 	controllers map[string]*controller
+	mu          sync.RWMutex
 	errs        chan error
 
 	context map[string]config.ServerConfig
@@ -128,7 +133,9 @@ func (p *ProxyServer) handleLoginRequest(serveName, loginPass string, coordinato
 			coordinator.Close()
 		} else {
 			controller := newController(coordinator)
+			p.mu.Lock()
 			p.controllers[serveName] = controller
+			p.mu.Unlock()
 			controller.daemonize()
 		}
 	} else {
@@ -162,6 +169,24 @@ func (p *ProxyServer) handleAuthRequest(serveName, authPass string, coordinator 
 			}
 		}
 	}
+}
+
+// ListRoutes returns the list of configured proxy routes with their connection status.
+func (p *ProxyServer) ListRoutes() []api.RouteInfo {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+
+	routes := make([]api.RouteInfo, 0, len(p.context))
+	for name, cfg := range p.context {
+		_, active := p.controllers[name]
+		routes = append(routes, api.RouteInfo{
+			Name:          name,
+			ListenAddress: cfg.Address,
+			Method:        cfg.Method,
+			Active:        active,
+		})
+	}
+	return routes
 }
 
 func (p *ProxyServer) handleConnErr(coordinator *connector.Coordinator, err error, cErr errors.Error) {

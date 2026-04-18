@@ -1,0 +1,145 @@
+# contract.spec.yaml — ubox-crosser protocol contract
+# Defines the message protocol between proxy-server, client, and auth-server.
+
+protocol:
+  name: ubox-crosser
+  transport: tcp
+  framing: newline-delimited JSON
+  separator: "\n"
+  encryption:
+    library: shadowsocks-go
+    supported_methods:
+      - chacha20
+      - aes-256-cfb
+      - aes-128-cfb
+
+messages:
+  request:
+    name: Message
+    encoding: json
+    fields:
+      - name: type
+        json_key: type
+        type: uint8
+        required: true
+        description: Message type code
+      - name: serve_name
+        json_key: serve_name
+        type: string
+        required: true
+        constraints:
+          min_length: 1
+          max_length: 255
+          pattern: "^[a-zA-Z0-9_]+$"
+        description: Service identifier
+      - name: password
+        json_key: password
+        type: string
+        required: true
+        constraints:
+          min_length: 1
+        description: Login or auth password
+
+  response:
+    name: ResultMessage
+    encoding: json
+    fields:
+      - name: result
+        json_key: result
+        type: uint8
+        required: true
+        description: Result status code
+      - name: reason
+        json_key: reason
+        type: uint8
+        required: true
+        description: Error reason code
+
+message_types:
+  LOGIN:
+    code: 0
+    description: Client login to proxy server
+    requires: [serve_name, password]
+    response: ResultMessage
+  HEART_BEAT:
+    code: 1
+    description: Keep-alive ping/pong
+    requires: []
+    response: echo
+  GEN_WORKER:
+    code: 2
+    description: Request worker connection from pool
+    requires: [serve_name]
+    response: connection
+  AUTHENTICATION:
+    code: 3
+    description: Auth-server authentication to proxy
+    requires: [serve_name, password]
+    response: ResultMessage
+
+result_codes:
+  SUCCESS:
+    code: 4
+    description: Operation succeeded
+  FAILED:
+    code: 5
+    description: Operation failed
+
+error_codes:
+  OK:
+    code: 0
+    description: No error
+  INVALID_PASSWORD:
+    code: 1
+    description: Password does not match
+  INVALID_SERVE_NAME:
+    code: 2
+    description: Service name not recognized or not registered
+  UNKNOWN_CODE:
+    code: 3
+    description: Unrecognized message type
+
+flows:
+  client_login:
+    description: Client registers with proxy server
+    steps:
+      - actor: client
+        action: connect (TCP + shadowsocks encryption)
+        target: proxy-server
+      - actor: client
+        action: send Message{type=LOGIN, serve_name, password}
+      - actor: proxy-server
+        action: validate serve_name exists in config
+      - actor: proxy-server
+        action: validate password matches config login_password
+      - actor: proxy-server
+        action: respond ResultMessage{result=SUCCESS/FAILED, reason}
+      - actor: proxy-server
+        action: if SUCCESS, register controller and start heartbeat daemon
+
+  auth_request:
+    description: Auth-server authenticates and gets tunnel
+    steps:
+      - actor: auth-server
+        action: connect (TCP + shadowsocks encryption)
+        target: proxy-server
+      - actor: auth-server
+        action: send Message{type=AUTHENTICATION, serve_name, password}
+      - actor: proxy-server
+        action: validate serve_name exists in config
+      - actor: proxy-server
+        action: validate controller is alive for serve_name
+      - actor: proxy-server
+        action: validate password matches config auth_password
+      - actor: proxy-server
+        action: respond ResultMessage{result=SUCCESS/FAILED, reason}
+      - actor: proxy-server
+        action: if SUCCESS, request worker conn and drill tunnel
+
+  heartbeat:
+    description: Keep-alive between proxy and logged-in client
+    steps:
+      - actor: proxy-server
+        action: receive Message{type=HEART_BEAT} on control channel
+      - actor: proxy-server
+        action: echo same Message back

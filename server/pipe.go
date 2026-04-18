@@ -4,11 +4,12 @@ import (
 	log "github.com/sirupsen/logrus"
 	ss "github.com/shadowsocks/shadowsocks-go/shadowsocks"
 	"net"
+	"time"
 )
 
 var customLeackyBuf = ss.NewLeakyBuf(2048, 4096)
 
-func pipeThenClose(src, dst net.Conn) {
+func pipeThenClose(src, dst net.Conn, byteCounter func(int64)) {
 	defer dst.Close()
 	buf := customLeackyBuf.Get()
 	defer customLeackyBuf.Put(buf)
@@ -25,18 +26,13 @@ func pipeThenClose(src, dst net.Conn) {
 				log.Errorln("write:", err)
 				break
 			} else {
+				if byteCounter != nil {
+					byteCounter(int64(n))
+				}
 				log.Debugf("pipe: %d, %x", n, buf[0:n])
 			}
 		}
 		if err != nil {
-			// Always "use of closed network connection", but no easy way to
-			// identify this specific error. So just leave the error along for now.
-			// More info here: https://code.google.com/p/go/issues/detail?id=4373
-			/*
-				if bool(Debug) && err != io.EOF {
-					Debug.Println("read:", err)
-				}
-			*/
 			break
 		}
 	}
@@ -44,6 +40,15 @@ func pipeThenClose(src, dst net.Conn) {
 
 func drillingTunnel(src, dst net.Conn) {
 	log.Debugf("Pipe between request connection and work connection, %s -> %s", src.RemoteAddr().String(), dst.RemoteAddr().String())
-	go pipeThenClose(src, dst)
-	pipeThenClose(dst, src)
+	go pipeThenClose(src, dst, nil)
+	pipeThenClose(dst, src, nil)
+}
+
+func drillingTunnelWithStats(src, dst net.Conn, stats *Collector) {
+	log.Debugf("Pipe between request connection and work connection, %s -> %s", src.RemoteAddr().String(), dst.RemoteAddr().String())
+	stats.OnTunnelStart()
+	start := time.Now()
+	go pipeThenClose(src, dst, stats.AddBytesIn)
+	pipeThenClose(dst, src, stats.AddBytesOut)
+	stats.OnTunnelEnd(start)
 }

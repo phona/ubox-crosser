@@ -12,6 +12,15 @@ import (
 	"github.com/phona/ubox-crosser/utils/conf"
 )
 
+func findStatsAddress(configs map[string]config.ServerConfig) string {
+	for _, cfg := range configs {
+		if cfg.StatsAddress != "" {
+			return cfg.StatsAddress
+		}
+	}
+	return ""
+}
+
 func main() {
 	var cmdConfig config.ServerConfig
 	cmd := &cobra.Command{
@@ -41,6 +50,16 @@ func main() {
 			}
 			proxy := server.NewProxyServer(configs)
 			go proxy.Process()
+
+			// Start stats HTTP server if stats_address is configured
+			if statsAddr := findStatsAddress(configs); statsAddr != "" {
+				go func() {
+					if err := server.StartStatsServer(statsAddr, proxy.Stats); err != nil {
+						logrus.Errorf("Stats server error: %v", err)
+					}
+				}()
+			}
+
 			func() {
 				for {
 					logrus.Errorln(proxy.Err())
@@ -78,6 +97,7 @@ func main() {
 	cmd.Flags().StringVarP(&cmdConfig.AuthPass, "auth-password", "E", "", "authenticating password")
 	cmd.Flags().StringVar(&cmdConfig.LogFile, "log-file", "", "log file path")
 	cmd.Flags().StringVar(&cmdConfig.LogLevel, "log-level", "debug", "log file path")
+	cmd.Flags().StringVar(&cmdConfig.StatsAddress, "stats-address", "", "HTTP address for stats endpoint, e.g. 127.0.0.1:8080")
 	cmd.Flags().StringVar(&cmdConfig.ConfigFile, "config-file", "", "config file path")
 	if err := cmd.Execute(); err != nil {
 		fmt.Println(err)

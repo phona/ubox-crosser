@@ -12,16 +12,14 @@ import (
 	"github.com/phona/ubox-crosser/utils/connector"
 )
 
-// for opening a listener to proxy request
+// ProxyServer opens a listener to proxy requests.
 type ProxyServer struct {
-	// generated from client
-
 	dispatcher  *connector.Dispatcher
 	controllers map[string]*controller
 	errs        chan error
+	Stats       *Collector
 
 	context map[string]config.ServerConfig
-	// exposers    map[string]*Exposer
 }
 
 func NewProxyServer(configs map[string]config.ServerConfig) *ProxyServer {
@@ -32,6 +30,7 @@ func NewProxyServer(configs map[string]config.ServerConfig) *ProxyServer {
 		dispatcher:  dispatcher,
 		controllers: make(map[string]*controller, total),
 		errs:        make(chan error, 10),
+		Stats:       NewCollector(),
 		context:     configs,
 	}
 
@@ -158,7 +157,7 @@ func (p *ProxyServer) handleAuthRequest(serveName, authPass string, coordinator 
 			} else if workConn, err := controller.getConn(); err != nil {
 				simpleErrHandle(err)
 			} else {
-				go drillingTunnel(coordinator.Conn, workConn)
+				go drillingTunnelWithStats(coordinator.Conn, workConn, p.Stats)
 			}
 		}
 	}

@@ -1,0 +1,215 @@
+openapi: "3.0.3"
+info:
+  title: Ubox Crosser Management API
+  description: HTTP management API for querying proxy connection state
+  version: "1.0.0"
+
+servers:
+  - url: http://localhost:8080
+    description: Local management server
+
+paths:
+  /api/connections:
+    get:
+      operationId: listConnections
+      summary: List all active proxy connections
+      description: |
+        Returns a paginated list of current proxy connections (control and worker).
+        Supports filtering by serve_name and status.
+      parameters:
+        - name: serve_name
+          in: query
+          required: false
+          description: Filter connections by service name
+          schema:
+            type: string
+            example: "my-service"
+        - name: status
+          in: query
+          required: false
+          description: Filter connections by status
+          schema:
+            type: string
+            enum: [active, idle, terminated]
+        - name: type
+          in: query
+          required: false
+          description: Filter connections by type
+          schema:
+            type: string
+            enum: [control, worker]
+        - name: page
+          in: query
+          required: false
+          description: Page number (1-based)
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: page_size
+          in: query
+          required: false
+          description: Number of items per page
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: Successful response with connection list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConnectionListResponse"
+        "400":
+          description: Invalid query parameters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/connections/{id}:
+    get:
+      operationId: getConnection
+      summary: Get details of a specific connection
+      description: Returns detailed information about a single connection by its ID.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Unique connection identifier
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful response with connection details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConnectionResponse"
+        "404":
+          description: Connection not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  schemas:
+    Connection:
+      type: object
+      required:
+        - id
+        - serve_name
+        - remote_addr
+        - status
+        - type
+        - connected_at
+      properties:
+        id:
+          type: string
+          description: Unique connection identifier
+          example: "conn-abc123"
+        serve_name:
+          type: string
+          description: The service name this connection belongs to
+          example: "my-service"
+        remote_addr:
+          type: string
+          description: Remote address of the connected client
+          example: "192.168.1.100:54321"
+        status:
+          type: string
+          enum: [active, idle, terminated]
+          description: Current connection status
+          example: "active"
+        type:
+          type: string
+          enum: [control, worker]
+          description: Connection type (control channel or worker)
+          example: "control"
+        connected_at:
+          type: string
+          format: date-time
+          description: Timestamp when the connection was established
+          example: "2026-04-18T10:30:00Z"
+        last_heartbeat:
+          type: string
+          format: date-time
+          nullable: true
+          description: Timestamp of last heartbeat (control connections only)
+          example: "2026-04-18T10:35:00Z"
+
+    Pagination:
+      type: object
+      required:
+        - page
+        - page_size
+        - total
+        - total_pages
+      properties:
+        page:
+          type: integer
+          description: Current page number
+          example: 1
+        page_size:
+          type: integer
+          description: Items per page
+          example: 20
+        total:
+          type: integer
+          description: Total number of matching connections
+          example: 42
+        total_pages:
+          type: integer
+          description: Total number of pages
+          example: 3
+
+    ConnectionListResponse:
+      type: object
+      required:
+        - connections
+        - pagination
+      properties:
+        connections:
+          type: array
+          items:
+            $ref: "#/components/schemas/Connection"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+
+    ConnectionResponse:
+      type: object
+      required:
+        - connection
+      properties:
+        connection:
+          $ref: "#/components/schemas/Connection"
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Error code
+          example: "not_found"
+        message:
+          type: string
+          description: Human-readable error message
+          example: "Connection not found"

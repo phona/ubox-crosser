@@ -1,0 +1,98 @@
+openapi: "3.1.0"
+info:
+  title: ubox-crosser Health API
+  version: "1.0.0"
+  description: Health-check HTTP API for the ubox-crosser proxy server.
+
+servers:
+  - url: http://localhost:8080
+    description: Default health listener (configurable via health_address)
+
+paths:
+  /health:
+    get:
+      operationId: getHealth
+      summary: Liveness health check
+      description: Returns HTTP 200 with status OK when the server process is running.
+      responses:
+        "200":
+          description: Server is alive.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+              example:
+                status: ok
+    post:
+      operationId: postHealthNotAllowed
+      summary: Method not allowed
+      responses:
+        "405":
+          description: Only GET is allowed.
+          headers:
+            Allow:
+              schema:
+                type: string
+                example: GET
+    put:
+      operationId: putHealthNotAllowed
+      summary: Method not allowed
+      responses:
+        "405":
+          description: Only GET is allowed.
+          headers:
+            Allow:
+              schema:
+                type: string
+                example: GET
+    delete:
+      operationId: deleteHealthNotAllowed
+      summary: Method not allowed
+      responses:
+        "405":
+          description: Only GET is allowed.
+          headers:
+            Allow:
+              schema:
+                type: string
+                example: GET
+    patch:
+      operationId: patchHealthNotAllowed
+      summary: Method not allowed
+      responses:
+        "405":
+          description: Only GET is allowed.
+          headers:
+            Allow:
+              schema:
+                type: string
+                example: GET
+
+  /{path}:
+    get:
+      operationId: catchAllNotFound
+      summary: Unknown path
+      parameters:
+        - name: path
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "404":
+          description: Path not found. Only /health is served.
+
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum:
+            - ok
+          description: Always "ok" when the server is alive.
+      example:
+        status: ok

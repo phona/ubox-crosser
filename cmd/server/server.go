@@ -3,9 +3,13 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"os"
+
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"os"
+
+	"github.com/phona/ubox-crosser/api"
 	"github.com/phona/ubox-crosser/log"
 	"github.com/phona/ubox-crosser/models/config"
 	"github.com/phona/ubox-crosser/server"
@@ -41,6 +45,11 @@ func main() {
 			}
 			proxy := server.NewProxyServer(configs)
 			go proxy.Process()
+
+			mux := http.NewServeMux()
+			mux.Handle("/api/routes", api.NewRoutesHandler(proxy))
+			go http.ListenAndServe("127.0.0.1:8080", mux)
+
 			func() {
 				for {
 					logrus.Errorln(proxy.Err())

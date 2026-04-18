@@ -1,0 +1,55 @@
+//go:build integration
+
+package {{.Package}}
+
+import (
+	"os"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+// ---------------------------------------------------------------------------
+// TestMain — shared setup for {{.Package}} tests
+// ---------------------------------------------------------------------------
+
+func TestMain(m *testing.M) {
+	os.Exit(m.Run())
+}
+
+// envOrDefault reads an environment variable with a fallback value.
+func envOrDefault(key, fallback string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return fallback
+}
+
+// ---------------------------------------------------------------------------
+// {{.ComponentName}}
+// ---------------------------------------------------------------------------
+
+func Test{{.ComponentName}}_{{.Action}}(t *testing.T) {
+	// ── Require service connection ──────────────────────────────────────
+	host := os.Getenv("{{.ServiceEnvVar}}")
+	if host == "" {
+		t.Skip("{{.ServiceEnvVar}} not set — skipping {{.ServiceName}} test")
+	}
+
+	// ── Setup connection ─────��──────────────────────────────────────────
+	// conn, err := net.Dial("tcp", host)
+	// require.NoError(t, err)
+	// defer conn.Close()
+
+	// ── Test cases ──────��───────────────────────────────────────────────
+	t.Run("happy path", func(t *testing.T) {
+		// TODO: implement
+		_ = assert.Equal
+		_ = require.NoError
+	})
+
+	t.Run("error case", func(t *testing.T) {
+		// TODO: implement
+	})
+}

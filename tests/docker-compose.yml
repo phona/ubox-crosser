@@ -83,6 +83,7 @@ services:
       - TEST_LOGIN_PASSWORD=test-login-pass
       - TEST_AUTH_PASSWORD=test-auth-pass
       - TEST_SERVE_NAME=test_service
+      - ECHO_API_BASE_URL=http://proxy-server:8080
     depends_on:
       echo-server:
         condition: service_started

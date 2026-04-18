@@ -6,6 +6,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	ss "github.com/shadowsocks/shadowsocks-go/shadowsocks"
 	"net"
+	"net/http"
 	"github.com/phona/ubox-crosser/models/config"
 	"github.com/phona/ubox-crosser/models/errors"
 	"github.com/phona/ubox-crosser/models/message"
@@ -19,6 +20,7 @@ type ProxyServer struct {
 	dispatcher  *connector.Dispatcher
 	controllers map[string]*controller
 	errs        chan error
+	stats       *Collector
 
 	context map[string]config.ServerConfig
 	// exposers    map[string]*Exposer
@@ -28,14 +30,25 @@ func NewProxyServer(configs map[string]config.ServerConfig) *ProxyServer {
 	total := len(configs)
 	dispatcher := connector.NewDispatcher(uint64(total))
 	listenedAddr := make([]string, 0, total)
+	collector := NewCollector()
 	server := &ProxyServer{
 		dispatcher:  dispatcher,
 		controllers: make(map[string]*controller, total),
 		errs:        make(chan error, 10),
+		stats:       collector,
 		context:     configs,
 	}
 
 	for _, config_ := range configs {
+		if config_.StatsAddress != "" {
+			go func(addr string) {
+				handler := NewStatsHandler(collector)
+				log.Infof("Starting stats HTTP server on %s", addr)
+				if err := http.ListenAndServe(addr, handler); err != nil {
+					server.errs <- err
+				}
+			}(config_.StatsAddress)
+		}
 		go server.initWorker(&listenedAddr, config_)
 	}
 	return server
@@ -91,13 +104,16 @@ func (p *ProxyServer) Process() {
 
 func (p *ProxyServer) handleConnection(conn net.Conn) {
 	log.Infof("Remote address %s connect to center server", conn.RemoteAddr().String())
+	if p.stats != nil {
+		p.stats.RecordConnection()
+	}
 	coordinator := connector.AsCoordinator(conn)
 
 	var reqMsg message.Message
 	if content, err := coordinator.ReadMsg(); err != nil {
 		p.errs <- err
 	} else if err := json.Unmarshal([]byte(content), &reqMsg); err != nil {
-		p.errs <- err
+		p.handleConnErr(coordinator, err, errors.UNKNOWN_CODE)
 	} else {
 		log.Infof("Received content: %s", content)
 		switch reqMsg.Type {
@@ -121,14 +137,16 @@ func (p *ProxyServer) handleLoginRequest(serveName, loginPass string, coordinato
 	if context, ok := p.context[serveName]; !ok {
 		p.handleConnErr(coordinator, fmt.Errorf("Unknown serve %s were received", serveName), errors.INVALID_SERVE_NAME)
 	} else if loginPass == context.LoginPass {
+		controller := newController(coordinator)
+		p.controllers[serveName] = controller
+
 		respMsg := message.ResultMessage{Result: message.SUCCESS, Reason: errors.OK}
 		content, _ := json.Marshal(respMsg)
 		if err := coordinator.SendMsg(string(content)); err != nil {
+			delete(p.controllers, serveName)
 			p.errs <- err
 			coordinator.Close()
 		} else {
-			controller := newController(coordinator)
-			p.controllers[serveName] = controller
 			controller.daemonize()
 		}
 	} else {
@@ -158,7 +176,7 @@ func (p *ProxyServer) handleAuthRequest(serveName, authPass string, coordinator 
 			} else if workConn, err := controller.getConn(); err != nil {
 				simpleErrHandle(err)
 			} else {
-				go drillingTunnel(coordinator.Conn, workConn)
+				go drillingTunnelWithStats(coordinator.Conn, workConn, p.stats)
 			}
 		}
 	}
@@ -171,4 +189,3 @@ func (p *ProxyServer) handleConnErr(coordinator *connector.Coordinator, err erro
 	_ = coordinator.SendMsg(string(content))
 	coordinator.Close()
 }
-

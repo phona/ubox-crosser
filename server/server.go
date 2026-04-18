@@ -3,12 +3,16 @@ package server
 import (
 	"encoding/json"
 	"fmt"
+	"time"
+
 	log "github.com/sirupsen/logrus"
 	ss "github.com/shadowsocks/shadowsocks-go/shadowsocks"
 	"net"
+
 	"github.com/phona/ubox-crosser/models/config"
 	"github.com/phona/ubox-crosser/models/errors"
 	"github.com/phona/ubox-crosser/models/message"
+	"github.com/phona/ubox-crosser/server/stats"
 	"github.com/phona/ubox-crosser/utils/connector"
 )
 
@@ -20,19 +24,34 @@ type ProxyServer struct {
 	controllers map[string]*controller
 	errs        chan error
 
-	context map[string]config.ServerConfig
-	// exposers    map[string]*Exposer
+	context   map[string]config.ServerConfig
+	collector *stats.Collector
 }
 
 func NewProxyServer(configs map[string]config.ServerConfig) *ProxyServer {
 	total := len(configs)
 	dispatcher := connector.NewDispatcher(uint64(total))
 	listenedAddr := make([]string, 0, total)
+	collector := stats.NewCollector()
 	server := &ProxyServer{
 		dispatcher:  dispatcher,
 		controllers: make(map[string]*controller, total),
 		errs:        make(chan error, 10),
 		context:     configs,
+		collector:   collector,
+	}
+
+	// Start stats HTTP server if configured
+	for _, cfg := range configs {
+		if cfg.StatsAddress != "" {
+			statsServer := stats.NewServer(collector)
+			go func(addr string) {
+				if err := statsServer.ListenAndServe(addr); err != nil {
+					log.Errorf("Stats server error: %s", err)
+				}
+			}(cfg.StatsAddress)
+			break // only one stats server needed
+		}
 	}
 
 	for _, config_ := range configs {
@@ -158,7 +177,12 @@ func (p *ProxyServer) handleAuthRequest(serveName, authPass string, coordinator 
 			} else if workConn, err := controller.getConn(); err != nil {
 				simpleErrHandle(err)
 			} else {
-				go drillingTunnel(coordinator.Conn, workConn)
+				p.collector.TrackConnection()
+				startTime := time.Now()
+				go func() {
+					drillingTunnel(coordinator.Conn, workConn, p.collector)
+					p.collector.ReleaseConnection(startTime)
+				}()
 			}
 		}
 	}

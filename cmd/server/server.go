@@ -3,12 +3,16 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"os"
+
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"os"
+
 	"github.com/phona/ubox-crosser/log"
 	"github.com/phona/ubox-crosser/models/config"
 	"github.com/phona/ubox-crosser/server"
+	"github.com/phona/ubox-crosser/server/api"
 	"github.com/phona/ubox-crosser/utils/conf"
 )
 
@@ -41,6 +45,15 @@ func main() {
 			}
 			proxy := server.NewProxyServer(configs)
 			go proxy.Process()
+
+			httpAddr := resolveHTTPAddr(configs)
+			httpSrv := api.NewHTTPServer(httpAddr)
+			go func() {
+				if err := api.ListenAndServe(httpSrv); err != nil && err != http.ErrServerClosed {
+					logrus.Errorf("HTTP server error: %s", err)
+				}
+			}()
+
 			func() {
 				for {
 					logrus.Errorln(proxy.Err())
@@ -78,9 +91,19 @@ func main() {
 	cmd.Flags().StringVarP(&cmdConfig.AuthPass, "auth-password", "E", "", "authenticating password")
 	cmd.Flags().StringVar(&cmdConfig.LogFile, "log-file", "", "log file path")
 	cmd.Flags().StringVar(&cmdConfig.LogLevel, "log-level", "debug", "log file path")
+	cmd.Flags().StringVar(&cmdConfig.HTTPAddress, "http-address", "", "HTTP API listen address (default :8080)")
 	cmd.Flags().StringVar(&cmdConfig.ConfigFile, "config-file", "", "config file path")
 	if err := cmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(0)
 	}
+}
+
+func resolveHTTPAddr(configs map[string]config.ServerConfig) string {
+	for _, cfg := range configs {
+		if cfg.HTTPAddress != "" {
+			return cfg.HTTPAddress
+		}
+	}
+	return ":8080"
 }

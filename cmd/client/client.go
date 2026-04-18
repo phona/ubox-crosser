@@ -3,7 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/Sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	"github.com/shadowsocks/shadowsocks-go/shadowsocks"
 	"github.com/spf13/cobra"
 	"os"

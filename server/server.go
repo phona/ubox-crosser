@@ -3,7 +3,7 @@ package server
 import (
 	"encoding/json"
 	"fmt"
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	ss "github.com/shadowsocks/shadowsocks-go/shadowsocks"
 	"net"
 	"ubox-crosser/models/config"
@@ -21,6 +21,7 @@ type ProxyServer struct {
 	errs        chan error
 
 	context map[string]config.ServerConfig
+	metrics *Metrics
 	// exposers    map[string]*Exposer
 }
 
@@ -28,14 +29,21 @@ func NewProxyServer(configs map[string]config.ServerConfig) *ProxyServer {
 	total := len(configs)
 	dispatcher := connector.NewDispatcher(uint64(total))
 	listenedAddr := make([]string, 0, total)
+	metrics := NewMetrics()
 	server := &ProxyServer{
 		dispatcher:  dispatcher,
 		controllers: make(map[string]*controller, total),
 		errs:        make(chan error, 10),
 		context:     configs,
+		metrics:     metrics,
 	}
 
+	metricsStarted := false
 	for _, config_ := range configs {
+		if config_.MetricsAddress != "" && !metricsStarted {
+			go StartMetricsServer(config_.MetricsAddress, metrics)
+			metricsStarted = true
+		}
 		go server.initWorker(&listenedAddr, config_)
 	}
 	return server
@@ -108,11 +116,12 @@ func (p *ProxyServer) handleConnection(conn net.Conn) {
 				p.handleConnErr(coordinator, fmt.Errorf("controller for %s does not alive", reqMsg.ServeName), errors.INVALID_SERVE_NAME)
 			} else {
 				controller.workConn <- conn
+				p.metrics.AddConnection()
 			}
 		case message.AUTHENTICATION:
 			p.handleAuthRequest(reqMsg.ServeName, reqMsg.Password, coordinator)
 		default:
-			p.handleConnErr(coordinator, fmt.Errorf("Unknown type %s were received", reqMsg.Type), errors.UNKNOWN_CODE)
+			p.handleConnErr(coordinator, fmt.Errorf("Unknown type %d were received", reqMsg.Type), errors.UNKNOWN_CODE)
 		}
 	}
 }
@@ -121,15 +130,18 @@ func (p *ProxyServer) handleLoginRequest(serveName, loginPass string, coordinato
 	if context, ok := p.context[serveName]; !ok {
 		p.handleConnErr(coordinator, fmt.Errorf("Unknown serve %s were received", serveName), errors.INVALID_SERVE_NAME)
 	} else if loginPass == context.LoginPass {
-		respMsg := message.ResultMessage{message.SUCCESS, errors.OK}
+		respMsg := message.ResultMessage{Result: message.SUCCESS, Reason: errors.OK}
 		content, _ := json.Marshal(respMsg)
 		if err := coordinator.SendMsg(string(content)); err != nil {
 			p.errs <- err
+			p.metrics.AddError()
 			coordinator.Close()
 		} else {
 			controller := newController(coordinator)
 			p.controllers[serveName] = controller
+			p.metrics.AddController()
 			controller.daemonize()
+			p.metrics.RemoveController()
 		}
 	} else {
 		p.handleConnErr(coordinator, fmt.Errorf("Invalid password for login %s != %s", context.LoginPass, loginPass), errors.INVALID_PASSWORD)
@@ -149,9 +161,10 @@ func (p *ProxyServer) handleAuthRequest(serveName, authPass string, coordinator 
 				coordinator.Close()
 				log.Errorf("Error handling connection in proxy server: %s", err)
 				p.errs <- err
+				p.metrics.AddError()
 			}
 
-			respMsg := message.ResultMessage{message.SUCCESS, errors.OK}
+			respMsg := message.ResultMessage{Result: message.SUCCESS, Reason: errors.OK}
 			buf, _ := json.Marshal(respMsg)
 			if err := coordinator.SendMsg(string(buf)); err != nil {
 				simpleErrHandle(err)
@@ -166,7 +179,8 @@ func (p *ProxyServer) handleAuthRequest(serveName, authPass string, coordinator 
 
 func (p *ProxyServer) handleConnErr(coordinator *connector.Coordinator, err error, cErr errors.Error) {
 	p.errs <- err
-	respMsg := message.ResultMessage{message.FAILED, cErr}
+	p.metrics.AddError()
+	respMsg := message.ResultMessage{Result: message.FAILED, Reason: cErr}
 	content, _ := json.Marshal(respMsg)
 	coordinator.SendMsg(string(content))
 	coordinator.Close()

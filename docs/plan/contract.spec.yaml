@@ -1,0 +1,63 @@
+openapi: "3.0.3"
+info:
+  title: ubox-crosser Metrics API
+  version: "1.0.0"
+  description: Runtime metrics endpoint for the ubox-crosser proxy server.
+
+paths:
+  /api/metrics:
+    get:
+      summary: Get server runtime metrics
+      operationId: getMetrics
+      responses:
+        "200":
+          description: Current server metrics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Metrics"
+        "405":
+          description: Method not allowed
+
+components:
+  schemas:
+    Metrics:
+      type: object
+      required:
+        - uptime_seconds
+        - active_connections
+        - total_connections
+        - active_controllers
+        - total_logins
+        - total_errors
+      properties:
+        uptime_seconds:
+          type: number
+          format: float
+          description: Seconds since server start
+          example: 3600.5
+        active_connections:
+          type: integer
+          format: int64
+          description: Currently active tunnel connections
+          example: 12
+        total_connections:
+          type: integer
+          format: int64
+          description: Cumulative tunnel connections since start
+          example: 1500
+        active_controllers:
+          type: integer
+          format: int64
+          description: Currently logged-in client controllers
+          example: 3
+        total_logins:
+          type: integer
+          format: int64
+          description: Cumulative login attempts since start
+          example: 25
+        total_errors:
+          type: integer
+          format: int64
+          description: Cumulative error count since start
+          example: 5

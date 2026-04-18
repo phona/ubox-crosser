@@ -53,6 +53,6 @@ func ParseServerConfigFile(filePath string) (map[string]config.ServerConfig, err
 
 func CmdErrHandle(cmd *cobra.Command, msg ...interface{}) {
 	cmd.Help()
-	fmt.Println(msg)
+	fmt.Println(msg...)
 	os.Exit(0)
 }

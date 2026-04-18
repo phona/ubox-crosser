@@ -22,9 +22,10 @@ type ClientConfig struct {
 }
 
 type ServerConfig struct {
-	LoginPass string `json:"login_password"`
-	AuthPass  string `json:"auth_password"`
-	Address   string `json:"address"`
+	LoginPass      string `json:"login_password"`
+	AuthPass       string `json:"auth_password"`
+	Address        string `json:"address"`
+	MetricsAddress string `json:"metrics_address"`
 	Config
 }
 

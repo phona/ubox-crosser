@@ -1,0 +1,25 @@
+# LOCKED - Do not modify without approval
+acceptance_criteria:
+  - id: AC-1
+    description: GET /api/metrics returns HTTP 200 with JSON body
+    validation: Response status is 200 and Content-Type is application/json
+
+  - id: AC-2
+    description: Response contains all required metric fields
+    validation: JSON body includes uptime_seconds, active_connections, total_connections, active_controllers, total_logins, total_errors
+
+  - id: AC-3
+    description: Metric values are correct types
+    validation: uptime_seconds is a number, all other fields are integers
+
+  - id: AC-4
+    description: Non-GET methods return 405
+    validation: POST /api/metrics returns HTTP 405
+
+  - id: AC-5
+    description: Metrics endpoint is optional
+    validation: Server starts normally when metrics_address is not configured
+
+  - id: AC-6
+    description: Backward compatible
+    validation: Existing server functionality is unaffected when metrics is enabled

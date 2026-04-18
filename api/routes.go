@@ -1,6 +1,9 @@
 package api
 
-import "net/http"
+import (
+	"encoding/json"
+	"net/http"
+)
 
 // RouteInfo represents a single proxy route as defined in contract.spec.yaml.
 type RouteInfo struct {
@@ -16,9 +19,22 @@ type RouteProvider interface {
 }
 
 // NewRoutesHandler returns an http.Handler for GET /api/routes.
-// TODO: implement — currently returns 501 so contract tests fail.
 func NewRoutesHandler(provider RouteProvider) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.Error(w, "not implemented", http.StatusNotImplemented)
+		if r.Method != http.MethodGet {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+
+		var routes []RouteInfo
+		if provider != nil {
+			routes = provider.ListRoutes()
+		}
+		if routes == nil {
+			routes = []RouteInfo{}
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(routes)
 	})
 }

@@ -12,6 +12,7 @@ type Config struct {
 	LogFile    string `json:"log_file"`
 	LogLevel   string `json:"log_level"`
 	ConfigFile string `json:"config_file"`
+	ApiAddr    string `json:"api_addr"`
 }
 
 type ClientConfig struct {

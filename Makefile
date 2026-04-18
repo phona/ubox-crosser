@@ -58,12 +58,17 @@ test-integration:
 	@echo "=== Cleaning up any previous run ==="
 	docker compose -p crosser-test-$(BUILD_ID) -f tests/docker-compose.yml down -v --remove-orphans 2>/dev/null || true
 	@echo "=== Starting containers ==="
-	@mkdir -p $(COVERAGE_DIR)
-	@chmod 777 $(COVERAGE_DIR)
-	docker compose -p crosser-test-$(BUILD_ID) -f tests/docker-compose.yml up --build --exit-code-from test-runner
+	@mkdir -p $(COVERAGE_DIR)/raw
+	@chmod -R 777 $(COVERAGE_DIR)
+	COVERAGE_HOST_DIR=$(CURDIR)/$(COVERAGE_DIR)/raw \
+		docker compose -p crosser-test-$(BUILD_ID) -f tests/docker-compose.yml up --build --exit-code-from test-runner
 	@echo "=== Merging coverage data ==="
-	go tool covdata textfmt -i=$(COVERAGE_DIR) -o=$(COVERAGE_DIR)/integration.out 2>/dev/null || echo "No coverage data to merge"
-	@echo "Coverage report: $(COVERAGE_DIR)/integration.out"
+	@if ls $(COVERAGE_DIR)/raw/cov* 1>/dev/null 2>&1; then \
+		go tool covdata textfmt -i=$(COVERAGE_DIR)/raw -o=$(COVERAGE_DIR)/integration.out; \
+		echo "Coverage report: $(COVERAGE_DIR)/integration.out"; \
+	else \
+		echo "No coverage data collected"; \
+	fi
 	@echo "=== Cleaning up test containers and volumes ==="
 	docker compose -p crosser-test-$(BUILD_ID) -f tests/docker-compose.yml down -v --remove-orphans 2>/dev/null || true
 

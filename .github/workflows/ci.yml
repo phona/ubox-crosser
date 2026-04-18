@@ -117,29 +117,22 @@ jobs:
 
       - name: Merge coverage reports
         run: |
+          echo "mode: set" > coverage/final.out
+
           shopt -s nullglob
           out_files=(coverage/**/*.out)
           shopt -u nullglob
 
-          if [[ ${#out_files[@]} -eq 0 ]]; then
-            echo "No coverage files found, creating empty final.out"
-            echo "mode: set" > coverage/final.out
-            exit 0
-          fi
-
-          first_file=""
           for f in "${out_files[@]}"; do
-            [[ "$f" != *"final.out" ]] && first_file="$f" && break
+            [[ "$f" == *"final.out" ]] && continue
+            # Only include files that start with "mode:"
+            if head -1 "$f" | grep -q '^mode:'; then
+              tail -n +2 "$f" >> coverage/final.out
+              echo "Merged: $f ($(wc -l < "$f") lines)"
+            else
+              echo "Skipped (invalid format): $f"
+            fi
           done
-
-          if [[ -n "$first_file" ]]; then
-            head -1 "$first_file" > coverage/final.out
-            for f in "${out_files[@]}"; do
-              [[ "$f" != *"final.out" ]] && tail -n +2 "$f" >> coverage/final.out
-            done
-          else
-            echo "mode: set" > coverage/final.out
-          fi
 
       - name: Verify coverage merge
         run: |

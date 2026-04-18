@@ -95,3 +95,8 @@ services:
 
 volumes:
   coverage-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${COVERAGE_HOST_DIR:-/tmp/crosser-coverage}

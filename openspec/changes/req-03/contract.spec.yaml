@@ -1,0 +1,61 @@
+openapi: "3.1.0"
+info:
+  title: ubox-crosser Health API
+  version: "1.0.0"
+  description: >
+    Health-check endpoint for the ubox-crosser proxy server.
+    Used by container orchestrators and load balancers to verify liveness.
+
+servers:
+  - url: http://localhost:8080
+    description: Default health listen address
+
+paths:
+  /health:
+    get:
+      operationId: getHealth
+      summary: Health check
+      description: Returns the health status of the proxy server.
+      responses:
+        "200":
+          description: Server is healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+              example:
+                status: ok
+        "405":
+          description: Method not allowed (non-GET requests)
+    post:
+      operationId: postHealthNotAllowed
+      summary: Method not allowed
+      responses:
+        "405":
+          description: Only GET is supported on this endpoint
+    put:
+      operationId: putHealthNotAllowed
+      summary: Method not allowed
+      responses:
+        "405":
+          description: Only GET is supported on this endpoint
+    delete:
+      operationId: deleteHealthNotAllowed
+      summary: Method not allowed
+      responses:
+        "405":
+          description: Only GET is supported on this endpoint
+
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum:
+            - ok
+          description: Health status indicator
+          example: ok

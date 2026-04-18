@@ -2,7 +2,7 @@ package server
 
 import (
 	"encoding/json"
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"net"
 	"ubox-crosser/models/message"
 	"ubox-crosser/utils/connector"

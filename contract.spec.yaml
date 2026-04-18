@@ -1,0 +1,76 @@
+openapi: "3.0.3"
+info:
+  title: Ubox-Crosser Echo API
+  description: HTTP API surface for ubox-crosser, starting with the echo endpoint.
+  version: "1.0.0"
+
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+
+paths:
+  /api/echo:
+    get:
+      summary: Echo a message
+      description: Returns the provided message in a JSON response.
+      operationId: echoMessage
+      parameters:
+        - name: msg
+          in: query
+          required: true
+          description: The message to echo back.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful echo response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EchoResponse"
+              examples:
+                hello:
+                  value:
+                    message: "hello"
+                empty:
+                  value:
+                    message: ""
+        "400":
+          description: Missing required msg parameter.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                missingMsg:
+                  value:
+                    error: "msg parameter is required"
+        "405":
+          description: Method not allowed. Only GET is accepted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                methodNotAllowed:
+                  value:
+                    error: "method not allowed"
+
+components:
+  schemas:
+    EchoResponse:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          description: The echoed message.
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: Error description.

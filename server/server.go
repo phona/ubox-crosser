@@ -6,38 +6,50 @@ import (
 	log "github.com/sirupsen/logrus"
 	ss "github.com/shadowsocks/shadowsocks-go/shadowsocks"
 	"net"
+	"net/http"
 	"github.com/phona/ubox-crosser/models/config"
 	"github.com/phona/ubox-crosser/models/errors"
 	"github.com/phona/ubox-crosser/models/message"
 	"github.com/phona/ubox-crosser/utils/connector"
 )
 
-// for opening a listener to proxy request
+// ProxyServer opens a listener to proxy request
 type ProxyServer struct {
-	// generated from client
-
 	dispatcher  *connector.Dispatcher
 	controllers map[string]*controller
 	errs        chan error
+	stats       *Collector
 
 	context map[string]config.ServerConfig
-	// exposers    map[string]*Exposer
 }
 
-func NewProxyServer(configs map[string]config.ServerConfig) *ProxyServer {
+func NewProxyServer(configs map[string]config.ServerConfig, statsAddress string) *ProxyServer {
 	total := len(configs)
 	dispatcher := connector.NewDispatcher(uint64(total))
 	listenedAddr := make([]string, 0, total)
+	collector := NewCollector()
 	server := &ProxyServer{
 		dispatcher:  dispatcher,
 		controllers: make(map[string]*controller, total),
 		errs:        make(chan error, 10),
 		context:     configs,
+		stats:       collector,
 	}
 
 	for _, config_ := range configs {
 		go server.initWorker(&listenedAddr, config_)
 	}
+
+	if statsAddress != "" {
+		go func() {
+			handler := newStatsHandler(collector)
+			log.Infof("Starting stats HTTP server on %s", statsAddress)
+			if err := http.ListenAndServe(statsAddress, handler); err != nil {
+				log.Errorf("Stats HTTP server error: %s", err)
+			}
+		}()
+	}
+
 	return server
 }
 
@@ -90,6 +102,7 @@ func (p *ProxyServer) Process() {
 }
 
 func (p *ProxyServer) handleConnection(conn net.Conn) {
+	p.stats.RecordConnection()
 	log.Infof("Remote address %s connect to center server", conn.RemoteAddr().String())
 	coordinator := connector.AsCoordinator(conn)
 
@@ -158,7 +171,7 @@ func (p *ProxyServer) handleAuthRequest(serveName, authPass string, coordinator 
 			} else if workConn, err := controller.getConn(); err != nil {
 				simpleErrHandle(err)
 			} else {
-				go drillingTunnel(coordinator.Conn, workConn)
+				go drillingTunnelWithStats(coordinator.Conn, workConn, p.stats)
 			}
 		}
 	}

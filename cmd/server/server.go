@@ -39,7 +39,14 @@ func main() {
 				logrus.Infoln("Using configuration from configure file")
 				logrus.Infof("Config init: %s", content)
 			}
-			proxy := server.NewProxyServer(configs)
+			// Determine stats address: prefer command-line flag, fall back to config
+			statsAddr := cmdConfig.StatsAddress
+			if statsAddr == "" {
+				if commonConfig, ok := configs[conf.CommonConfigName]; ok {
+					statsAddr = commonConfig.StatsAddress
+				}
+			}
+			proxy := server.NewProxyServer(configs, statsAddr)
 			go proxy.Process()
 			func() {
 				for {
@@ -78,6 +85,7 @@ func main() {
 	cmd.Flags().StringVarP(&cmdConfig.AuthPass, "auth-password", "E", "", "authenticating password")
 	cmd.Flags().StringVar(&cmdConfig.LogFile, "log-file", "", "log file path")
 	cmd.Flags().StringVar(&cmdConfig.LogLevel, "log-level", "debug", "log file path")
+	cmd.Flags().StringVar(&cmdConfig.StatsAddress, "stats-address", "", "address for stats HTTP server (e.g., :8080)")
 	cmd.Flags().StringVar(&cmdConfig.ConfigFile, "config-file", "", "config file path")
 	if err := cmd.Execute(); err != nil {
 		fmt.Println(err)

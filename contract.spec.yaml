@@ -1,0 +1,72 @@
+openapi: "3.0.3"
+info:
+  title: ubox-crosser Management API
+  version: "1.0.0"
+  description: Read-only management API for querying proxy route configuration at runtime.
+
+servers:
+  - url: http://127.0.0.1:8080
+    description: Default management API (localhost only)
+
+paths:
+  /api/routes:
+    get:
+      summary: List all configured proxy routes
+      operationId: listRoutes
+      description: |
+        Returns all configured proxy route rules, including service name,
+        listen address, encryption method, and whether a client controller
+        is currently connected.
+      responses:
+        "200":
+          description: Successfully retrieved route list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Route"
+              examples:
+                two-routes:
+                  summary: Two configured services, one active
+                  value:
+                    - name: "UBox_cytm"
+                      listen_address: "127.0.0.1:7000"
+                      method: "chacha20"
+                      active: true
+                    - name: "UBox_ylxy"
+                      listen_address: "127.0.0.1:7000"
+                      method: "chacha20"
+                      active: false
+                empty:
+                  summary: No services configured
+                  value: []
+        "405":
+          description: Method not allowed (non-GET requests)
+
+components:
+  schemas:
+    Route:
+      type: object
+      required:
+        - name
+        - listen_address
+        - method
+        - active
+      properties:
+        name:
+          type: string
+          description: Service name identifier
+          example: "UBox_cytm"
+        listen_address:
+          type: string
+          description: Proxy listen address for this service
+          example: "127.0.0.1:7000"
+        method:
+          type: string
+          description: Encryption method (empty string if unencrypted)
+          example: "chacha20"
+        active:
+          type: boolean
+          description: Whether a client controller is currently connected
+          example: true

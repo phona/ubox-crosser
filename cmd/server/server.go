@@ -6,6 +6,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"os"
+	"github.com/phona/ubox-crosser/httpapi"
 	"github.com/phona/ubox-crosser/log"
 	"github.com/phona/ubox-crosser/models/config"
 	"github.com/phona/ubox-crosser/server"
@@ -38,6 +39,13 @@ func main() {
 				logrus.Infoln("Log file and log level no defined, use default mode")
 				logrus.Infoln("Using configuration from configure file")
 				logrus.Infof("Config init: %s", content)
+			}
+			httpapi.Init()
+			for _, cfg := range configs {
+				if cfg.ApiAddr != "" {
+					go httpapi.StartServer(cfg.ApiAddr)
+					break
+				}
 			}
 			proxy := server.NewProxyServer(configs)
 			go proxy.Process()
@@ -79,6 +87,7 @@ func main() {
 	cmd.Flags().StringVar(&cmdConfig.LogFile, "log-file", "", "log file path")
 	cmd.Flags().StringVar(&cmdConfig.LogLevel, "log-level", "debug", "log file path")
 	cmd.Flags().StringVar(&cmdConfig.ConfigFile, "config-file", "", "config file path")
+	cmd.Flags().StringVar(&cmdConfig.ApiAddr, "api-addr", "", "HTTP API listen address (e.g. :8080)")
 	if err := cmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(0)

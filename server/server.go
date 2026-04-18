@@ -72,6 +72,10 @@ func (p *ProxyServer) initWorker(pListenedAddr *[]string, serverConfig config.Se
 	}
 }
 
+func (p *ProxyServer) Errs() chan<- error {
+	return p.errs
+}
+
 func (p *ProxyServer) Err() error {
 	select {
 	case err := <-p.errs:

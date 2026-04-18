@@ -40,6 +40,7 @@ func main() {
 				logrus.Infof("Config init: %s", content)
 			}
 			proxy := server.NewProxyServer(configs)
+			server.StartHealthServer(cmdConfig.HealthAddr, proxy.Errs())
 			go proxy.Process()
 			func() {
 				for {
@@ -78,6 +79,7 @@ func main() {
 	cmd.Flags().StringVarP(&cmdConfig.AuthPass, "auth-password", "E", "", "authenticating password")
 	cmd.Flags().StringVar(&cmdConfig.LogFile, "log-file", "", "log file path")
 	cmd.Flags().StringVar(&cmdConfig.LogLevel, "log-level", "debug", "log file path")
+	cmd.Flags().StringVar(&cmdConfig.HealthAddr, "health-addr", ":8080", "health check listen address")
 	cmd.Flags().StringVar(&cmdConfig.ConfigFile, "config-file", "", "config file path")
 	if err := cmd.Execute(); err != nil {
 		fmt.Println(err)

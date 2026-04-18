@@ -6,6 +6,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	ss "github.com/shadowsocks/shadowsocks-go/shadowsocks"
 	"net"
+	"net/http"
 	"github.com/phona/ubox-crosser/models/config"
 	"github.com/phona/ubox-crosser/models/errors"
 	"github.com/phona/ubox-crosser/models/message"
@@ -19,6 +20,7 @@ type ProxyServer struct {
 	dispatcher  *connector.Dispatcher
 	controllers map[string]*controller
 	errs        chan error
+	collector   *Collector
 
 	context map[string]config.ServerConfig
 	// exposers    map[string]*Exposer
@@ -28,16 +30,33 @@ func NewProxyServer(configs map[string]config.ServerConfig) *ProxyServer {
 	total := len(configs)
 	dispatcher := connector.NewDispatcher(uint64(total))
 	listenedAddr := make([]string, 0, total)
+	collector := NewCollector()
 	server := &ProxyServer{
 		dispatcher:  dispatcher,
 		controllers: make(map[string]*controller, total),
 		errs:        make(chan error, 10),
+		collector:   collector,
 		context:     configs,
 	}
 
 	for _, config_ := range configs {
 		go server.initWorker(&listenedAddr, config_)
 	}
+
+	// Start stats HTTP server if any config has stats_address set
+	for _, cfg := range configs {
+		if cfg.StatsAddress != "" {
+			go func(addr string) {
+				handler := newStatsHandler(collector)
+				log.Infof("Starting stats HTTP server on %s", addr)
+				if err := http.ListenAndServe(addr, handler); err != nil {
+					log.Errorf("Stats HTTP server error: %s", err)
+				}
+			}(cfg.StatsAddress)
+			break
+		}
+	}
+
 	return server
 }
 
@@ -90,6 +109,7 @@ func (p *ProxyServer) Process() {
 }
 
 func (p *ProxyServer) handleConnection(conn net.Conn) {
+	p.collector.RecordConnection()
 	log.Infof("Remote address %s connect to center server", conn.RemoteAddr().String())
 	coordinator := connector.AsCoordinator(conn)
 
@@ -158,7 +178,7 @@ func (p *ProxyServer) handleAuthRequest(serveName, authPass string, coordinator 
 			} else if workConn, err := controller.getConn(); err != nil {
 				simpleErrHandle(err)
 			} else {
-				go drillingTunnel(coordinator.Conn, workConn)
+				go drillingTunnel(coordinator.Conn, workConn, p.collector)
 			}
 		}
 	}

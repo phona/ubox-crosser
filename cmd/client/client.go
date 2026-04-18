@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 	"os"
 	"github.com/phona/ubox-crosser/client"
+	"github.com/phona/ubox-crosser/httpapi"
 	"github.com/phona/ubox-crosser/log"
 	"github.com/phona/ubox-crosser/models/config"
 	"github.com/phona/ubox-crosser/utils/conf"
@@ -43,6 +44,10 @@ func main() {
 			log.InitLog(fileConfig.LogFile, fileConfig.LogLevel)
 			content, _ := json.Marshal(fileConfig)
 			logrus.Infof("Config init: %s", content)
+			httpapi.Init()
+			if fileConfig.ApiAddr != "" {
+				go httpapi.StartServer(fileConfig.ApiAddr)
+			}
 			cli := client.NewClient(cipher)
 			if err := cli.Connect(fileConfig.TargetAddress, fileConfig.ServeName, fileConfig.LoginPassword); err != nil {
 				conf.CmdErrHandle(cmd, err)
@@ -57,6 +62,7 @@ func main() {
 	cmd.Flags().StringVar(&cmdConfig.LogLevel, "log-level", "", "log level: debug, info, error, warn")
 	cmd.Flags().StringVarP(&cmdConfig.ServeName, "serve-name", "n", "", "serve name")
 	cmd.Flags().StringVar(&cmdConfig.ConfigFile, "config-file", "", "config file path")
+	cmd.Flags().StringVar(&cmdConfig.ApiAddr, "api-addr", "", "HTTP API listen address (e.g. :8080)")
 	if err := cmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(0)

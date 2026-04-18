@@ -7,6 +7,7 @@ import (
 	"github.com/shadowsocks/shadowsocks-go/shadowsocks"
 	"github.com/spf13/cobra"
 	"os"
+	"github.com/phona/ubox-crosser/httpapi"
 	"github.com/phona/ubox-crosser/log"
 	"github.com/phona/ubox-crosser/models/config"
 	"github.com/phona/ubox-crosser/server"
@@ -46,6 +47,10 @@ func main() {
 			content, _ := json.Marshal(fileConfig)
 			logrus.Infof("Config init: %s", content)
 
+			httpapi.Init()
+			if fileConfig.ApiAddr != "" {
+				go httpapi.StartServer(fileConfig.ApiAddr)
+			}
 			proxy := server.NewAuthServer(fileConfig.TargetAddress, fileConfig.ServeName, fileConfig.LoginPassword, cipher)
 			proxy.Listen(fileConfig.ExposeAddress)
 		},
@@ -59,6 +64,7 @@ func main() {
 	cmd.Flags().StringVar(&cmdConfig.LogFile, "log-file", "", "log file path")
 	cmd.Flags().StringVar(&cmdConfig.LogLevel, "log-level", "", "log file path")
 	cmd.Flags().StringVar(&cmdConfig.ConfigFile, "config-file", "", "config file path")
+	cmd.Flags().StringVar(&cmdConfig.ApiAddr, "api-addr", "", "HTTP API listen address (e.g. :8080)")
 	if err := cmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(0)

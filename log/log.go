@@ -1,7 +1,7 @@
 package log
 
 import (
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"os"
 )
 
@@ -31,7 +31,7 @@ func SetLogFile(logFile string) {
 
 // value: error, warning, info, debug
 func SetLogLevel(logLevel string) {
-	level := log.WarnLevel // warning
+	var level log.Level
 
 	switch logLevel {
 	case "error":

@@ -1,0 +1,13 @@
+{
+    "common": {
+        "key": "test-secret-key-123",
+        "method": "chacha20",
+        "address": "0.0.0.0:7000",
+        "login_password": "test-login-pass",
+        "auth_password": "test-auth-pass",
+        "log_file": "",
+        "log_level": "debug"
+    },
+    "test_service": {},
+    "protocol_test": {}
+}

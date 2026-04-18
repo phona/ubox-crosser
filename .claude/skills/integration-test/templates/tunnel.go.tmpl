@@ -1,0 +1,89 @@
+//go:build integration
+
+package integration
+
+import (
+	"encoding/json"
+	"net"
+	"os"
+	"testing"
+	"time"
+
+	ss "github.com/shadowsocks/shadowsocks-go/shadowsocks"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/phona/ubox-crosser/models/message"
+	"github.com/phona/ubox-crosser/utils/connector"
+)
+
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+// Use a dedicated service name to avoid overriding the real client's controller
+const testProtocolService = "protocol_test"
+
+// ---------------------------------------------------------------------------
+// P0 — Critical Path
+// ---------------------------------------------------------------------------
+
+// Test{Component}_{Action}_HappyPath tests the {description}.
+func Test{Component}_{Action}_HappyPath(t *testing.T) {
+	conn, err := dialEncrypted(proxyAddr)
+	require.NoError(t, err)
+	defer conn.Close()
+
+	coordinator := connector.AsCoordinator(conn)
+
+	// Send message
+	reqMsg := message.Message{
+		Type:      message.LOGIN,
+		ServeName: testProtocolService,
+		Password:  loginPassword,
+	}
+	buf, _ := json.Marshal(reqMsg)
+	require.NoError(t, coordinator.SendMsg(string(buf)))
+
+	// Read response
+	content, err := coordinator.ReadMsg()
+	require.NoError(t, err)
+
+	var respMsg message.ResultMessage
+	require.NoError(t, json.Unmarshal([]byte(content), &respMsg))
+
+	assert.Equal(t, uint8(message.SUCCESS), respMsg.Result)
+}
+
+// ---------------------------------------------------------------------------
+// P0 — Auth Boundary
+// ---------------------------------------------------------------------------
+
+// Test{Component}_{Action}_WrongPassword tests that wrong credentials are rejected.
+func Test{Component}_{Action}_WrongPassword(t *testing.T) {
+	conn, err := dialEncrypted(proxyAddr)
+	require.NoError(t, err)
+	defer conn.Close()
+
+	coordinator := connector.AsCoordinator(conn)
+
+	reqMsg := message.Message{
+		Type:      message.LOGIN,
+		ServeName: testProtocolService,
+		Password:  "wrong-password",
+	}
+	buf, _ := json.Marshal(reqMsg)
+	require.NoError(t, coordinator.SendMsg(string(buf)))
+
+	content, err := coordinator.ReadMsg()
+	require.NoError(t, err)
+
+	var respMsg message.ResultMessage
+	require.NoError(t, json.Unmarshal([]byte(content), &respMsg))
+
+	assert.Equal(t, uint8(message.FAILED), respMsg.Result)
+}
+
+// ---------------------------------------------------------------------------
+// Helpers (reuse from tunnel_test.go)
+// ---------------------------------------------------------------------------

@@ -1,0 +1,158 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main, master, release, 'release/*']
+
+env:
+  GO_VERSION: '1.23'
+
+jobs:
+  # ═══════════════════════════════════════════════════════════════
+  # Gate: skip entire pipeline by adding 'skip-ci' label to PR
+  # ═══════════════════════════════════════════════════════════════
+
+  check-skip:
+    name: Check Skip
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'skip-ci') }}
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "CI not skipped"
+
+  # ═══════════════════════════════════════════════════════════════
+  # PHASE 1: Quality (Concurrent)
+  # ═══════════════════════════════════════════════════════════════
+
+  quality-lint:
+    name: Lint
+    needs: [check-skip]
+    runs-on: ${{ fromJSON(vars.CI_RUNNER || '["ubuntu-latest"]') }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: go.sum
+
+      - name: Run go vet
+        run: go vet ./...
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: v1.62.2
+          args: --new-from-rev=origin/${{ github.base_ref }}
+
+  quality-unit-test:
+    name: Unit Tests
+    needs: [check-skip]
+    runs-on: ${{ fromJSON(vars.CI_RUNNER || '["ubuntu-latest"]') }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: go.sum
+
+      - name: Run Unit Tests
+        run: |
+          mkdir -p coverage
+          go test -short -v -count=1 -coverprofile=coverage/unit.out -covermode=set ./...
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: unit-coverage
+          path: coverage/unit.out
+          retention-days: 3
+
+  # ═══════════════════════════════════════════════════════════════
+  # PHASE 2: Integration (Depends on Phase 1)
+  # ═══════════════════════════════════════════════════════════════
+
+  integration:
+    name: Integration Tests
+    needs: [quality-lint, quality-unit-test]
+    runs-on: ${{ fromJSON(vars.CI_RUNNER || '["ubuntu-latest"]') }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: go.sum
+
+      - name: Run Integration Tests
+        run: make test-integration BUILD_ID="${GITHUB_RUN_ID}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: int-coverage
+          path: coverage/integration.out
+          retention-days: 3
+        if: always()
+
+  # ═══════════════════════════════════════════════════════════════
+  # PHASE 3: SonarQube Analysis
+  # ═══════════════════════════════════════════════════════════════
+
+  sonarqube:
+    name: SonarQube Analysis
+    needs: [integration]
+    runs-on: ${{ fromJSON(vars.CI_RUNNER || '["ubuntu-latest"]') }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: coverage/
+
+      - name: Merge coverage reports
+        run: |
+          echo "mode: set" > coverage/final.out
+
+          shopt -s nullglob
+          out_files=(coverage/**/*.out)
+          shopt -u nullglob
+
+          for f in "${out_files[@]}"; do
+            [[ "$f" == *"final.out" ]] && continue
+            # Only include files that start with "mode:"
+            if head -1 "$f" | grep -q '^mode:'; then
+              tail -n +2 "$f" >> coverage/final.out
+              echo "Merged: $f ($(wc -l < "$f") lines)"
+            else
+              echo "Skipped (invalid format): $f"
+            fi
+          done
+
+      - name: Verify coverage merge
+        run: |
+          if [[ -f coverage/final.out ]]; then
+            echo "Coverage report created:"
+            head -1 coverage/final.out
+            wc -l coverage/final.out
+          fi
+
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v6
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          NODE_TLS_REJECT_UNAUTHORIZED: '0'
+        with:
+          args: >
+            -Dproject.settings=sonar-project.properties
+            -Dsonar.go.coverage.reportPaths=coverage/final.out
+            -Dsonar.scm.revision=${{ github.event.pull_request.head.sha || github.sha }}
+            -Dsonar.pullrequest.key=${{ github.event.pull_request.number }}
+            -Dsonar.pullrequest.branch=${{ github.head_ref }}
+            -Dsonar.pullrequest.base=${{ github.base_ref }}

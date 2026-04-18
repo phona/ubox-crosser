@@ -1,0 +1,102 @@
+# ═══════════════════════════════════════════════════
+# ubox-crosser Integration Test Environment
+# ═══════════════════════════════════════════════════
+#
+# Architecture:
+#   test-runner → auth-server:7002 → proxy-server:7000 ← client → echo-server:9000
+#
+# Usage:
+#   docker compose -f tests/docker-compose.yml up --build --exit-code-from test-runner
+
+services:
+  # Simulated internal service behind NAT (target to be proxied)
+  echo-server:
+    image: hashicorp/http-echo:latest
+    command: ["-listen=:9000", "-text=hello-from-echo"]
+
+  # Central proxy relay
+  proxy-server:
+    build:
+      context: ..
+      dockerfile: tests/Dockerfile.test
+    command: ["server", "--config-file", "/etc/crosser/server.json"]
+    volumes:
+      - ./configs/server.json:/etc/crosser/server.json:ro
+      - coverage-data:/coverage
+    environment:
+      - GOCOVERDIR=/coverage
+    healthcheck:
+      test: ["CMD", "healthcheck", "localhost:7000"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+  # Client behind NAT - connects outward to proxy-server
+  client:
+    build:
+      context: ..
+      dockerfile: tests/Dockerfile.test
+    command: ["client", "--config-file", "/etc/crosser/client.json"]
+    volumes:
+      - ./configs/client.json:/etc/crosser/client.json:ro
+      - coverage-data:/coverage
+    environment:
+      - GOCOVERDIR=/coverage
+    depends_on:
+      proxy-server:
+        condition: service_healthy
+
+  # Internet-facing auth gateway
+  auth-server:
+    build:
+      context: ..
+      dockerfile: tests/Dockerfile.test
+    command: ["auth_server", "--config-file", "/etc/crosser/auth_server.json"]
+    volumes:
+      - ./configs/auth_server.json:/etc/crosser/auth_server.json:ro
+      - coverage-data:/coverage
+    environment:
+      - GOCOVERDIR=/coverage
+    depends_on:
+      proxy-server:
+        condition: service_healthy
+
+  # Test runner - executes integration tests
+  test-runner:
+    build:
+      context: ..
+      dockerfile: tests/Dockerfile.test
+    command: >
+      sh -c "
+        echo 'Waiting for services to be ready...' &&
+        sleep 5 &&
+        echo 'Running integration tests...' &&
+        cd /src &&
+        go test -v -count=1 -tags integration -timeout=120s ./tests/integration/...
+      "
+    environment:
+      - PROXY_SERVER_ADDR=proxy-server:7000
+      - AUTH_SERVER_ADDR=auth-server:7002
+      - ECHO_SERVER_ADDR=echo-server:9000
+      - TEST_CIPHER_KEY=test-secret-key-123
+      - TEST_CIPHER_METHOD=chacha20
+      - TEST_LOGIN_PASSWORD=test-login-pass
+      - TEST_AUTH_PASSWORD=test-auth-pass
+      - TEST_SERVE_NAME=test_service
+    depends_on:
+      echo-server:
+        condition: service_started
+      proxy-server:
+        condition: service_healthy
+      client:
+        condition: service_started
+      auth-server:
+        condition: service_started
+
+volumes:
+  coverage-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${COVERAGE_HOST_DIR:-/tmp/crosser-coverage}

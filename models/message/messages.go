@@ -1,6 +1,6 @@
 package message
 
-import "ubox-crosser/models/errors"
+import "github.com/phona/ubox-crosser/models/errors"
 
 const (
 	LOGIN = iota

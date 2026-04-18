@@ -3,13 +3,13 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/Sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"os"
-	"ubox-crosser/log"
-	"ubox-crosser/models/config"
-	"ubox-crosser/server"
-	"ubox-crosser/utils/conf"
+	"github.com/phona/ubox-crosser/log"
+	"github.com/phona/ubox-crosser/models/config"
+	"github.com/phona/ubox-crosser/server"
+	"github.com/phona/ubox-crosser/utils/conf"
 )
 
 func main() {

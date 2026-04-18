@@ -1,7 +1,7 @@
 package server
 
 import (
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	ss "github.com/shadowsocks/shadowsocks-go/shadowsocks"
 	"net"
 )

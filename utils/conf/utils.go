@@ -3,10 +3,12 @@ package conf
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/spf13/cobra"
-	"io/ioutil"
+	"io"
 	"os"
-	"ubox-crosser/models/config"
+
+	"github.com/spf13/cobra"
+
+	"github.com/phona/ubox-crosser/models/config"
 )
 
 func ParseConfigFile(filePath string, config interface{}) error {
@@ -20,7 +22,10 @@ func ParseConfigFile(filePath string, config interface{}) error {
 	}
 	defer f.Close()
 
-	data, err := ioutil.ReadAll(f)
+	data, err := io.ReadAll(f)
+	if err != nil {
+		return err
+	}
 	if err := json.Unmarshal(data, config); err != nil {
 		return err
 	} else {
@@ -52,7 +57,7 @@ func ParseServerConfigFile(filePath string) (map[string]config.ServerConfig, err
 }
 
 func CmdErrHandle(cmd *cobra.Command, msg ...interface{}) {
-	cmd.Help()
-	fmt.Println(msg)
+	_ = cmd.Help()
+	fmt.Println(msg...)
 	os.Exit(0)
 }

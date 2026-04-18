@@ -3,12 +3,12 @@ package server
 import (
 	"encoding/json"
 	"fmt"
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	ss "github.com/shadowsocks/shadowsocks-go/shadowsocks"
 	"net"
 	"os"
-	"ubox-crosser/models/message"
-	"ubox-crosser/utils/connector"
+	"github.com/phona/ubox-crosser/models/message"
+	"github.com/phona/ubox-crosser/utils/connector"
 )
 
 type AuthServer struct {
@@ -91,7 +91,7 @@ func (a *AuthServer) getConn() (net.Conn, error) {
 		case message.FAILED:
 			return errFunc(fmt.Errorf("Login failure: %s", respMsg.Reason))
 		default:
-			return errFunc(fmt.Errorf("Invalid status code %s", respMsg.Result))
+			return errFunc(fmt.Errorf("Invalid status code %d", respMsg.Result))
 		}
 	}
 }

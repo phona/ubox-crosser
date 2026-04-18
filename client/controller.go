@@ -2,16 +2,16 @@ package client
 
 import (
 	"encoding/json"
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"github.com/armon/go-socks5"
 	ss "github.com/shadowsocks/shadowsocks-go/shadowsocks"
 	"io"
 	"net"
 	"sync"
 	"time"
-	"ubox-crosser/models/errors"
-	"ubox-crosser/models/message"
-	"ubox-crosser/utils/connector"
+	"github.com/phona/ubox-crosser/models/errors"
+	"github.com/phona/ubox-crosser/models/message"
+	"github.com/phona/ubox-crosser/utils/connector"
 )
 
 var (
@@ -99,7 +99,7 @@ func (c *Controller) handleMessage() {
 				// a heart beat
 				log.Infof("Received a heart beat from %s", c.ctlConn.Conn.RemoteAddr().String())
 			default:
-				log.Errorf("Unknown type %s were received", respMsg.Type)
+				log.Errorf("Unknown type %d were received", respMsg.Type)
 			}
 		}
 	}
@@ -119,7 +119,7 @@ func (c *Controller) newWorkConn() {
 		} else {
 			log.Infof("Create a new socks5 work connection, %s", workConn.Conn.LocalAddr())
 			if err := c.sessionLayer.ServeConn(workConn.Conn); err != nil {
-				log.Errorf("Error serving a work connection with socks5 protocol: ", err)
+				log.Errorf("Error serving a work connection with socks5 protocol: %v", err)
 			}
 		}
 	}
@@ -190,7 +190,7 @@ func (c *Controller) startHeartBeat(coordinator *connector.Coordinator) {
 			err := coordinator.SendMsg(string(buf))
 			log.Info("Send heartbeat to server")
 			if err != nil {
-				log.Error("Send heartbeat to server failed! Err:%v", err)
+				log.Errorf("Send heartbeat to server failed! Err:%v", err)
 				continue
 			}
 		} else {

@@ -1,0 +1,33 @@
+package {{.Package}}_test
+
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
+
+// ---------------------------------------------------------------------------
+// {{.FunctionName}}
+// ---------------------------------------------------------------------------
+
+func Test{{.FunctionName}}(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    {{.InputType}}
+		expected {{.OutputType}}
+	}{
+		{"happy path", {{.HappyInput}}, {{.HappyOutput}}},
+		// Add more cases...
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := {{.Package}}.{{.FunctionName}}(tt.input)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func Test{{.FunctionName}}_EdgeCases(t *testing.T) {
+	// zero value, empty input, boundary conditions
+}

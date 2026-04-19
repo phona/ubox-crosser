@@ -1,0 +1,26 @@
+openapi: "3.0.3"
+info:
+  title: ubox-crosser Version API
+  version: "1.0.0"
+  description: Version endpoint for ubox-crosser proxy server.
+
+paths:
+  /version:
+    get:
+      summary: Get application version
+      operationId: getVersion
+      responses:
+        "200":
+          description: Version information
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - version
+                properties:
+                  version:
+                    type: string
+                    example: "v3"
+        "405":
+          description: Method not allowed

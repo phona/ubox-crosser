@@ -35,8 +35,13 @@ func NewProxyServer(configs map[string]config.ServerConfig) *ProxyServer {
 		context:     configs,
 	}
 
+	httpStarted := make(map[string]bool)
 	for _, config_ := range configs {
 		go server.initWorker(&listenedAddr, config_)
+		if config_.HTTPAddress != "" && !httpStarted[config_.HTTPAddress] {
+			httpStarted[config_.HTTPAddress] = true
+			go startHTTPServer(config_.HTTPAddress)
+		}
 	}
 	return server
 }

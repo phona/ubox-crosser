@@ -1,0 +1,25 @@
+{
+  "mcpServers": {
+    "aissh-tao": {
+      "type": "http",
+      "url": "https://aissh.5ok.co/mcp",
+      "headers": {
+        "Authorization": "Bearer aissh_bd47c5b7_90acfa6aceacb0d04b06fdf47999c8f3a66958504da85da2e24df43c552d5189"
+      }
+    },
+    "aissh": {
+      "type": "http",
+      "url": "https://aissh.5ok.co/mcp",
+      "headers": {
+        "Authorization": "Bearer aissh_bd47c5b7_45128a8e2f5d6f5ae0a326cd787328b9da2c4aefb55ffe9e285d91b51f1ec718"
+      }
+    },
+    "erpnext": {
+      "type": "sse",
+      "url": "https://8100--main--erpnext--root.co.weifashi.cn/sse",
+      "headers": {
+        "Authorization": "Bearer lkhasldnkh2qonlkjejji9qjwjpaqw2lkjn22"
+      }
+    }
+  }
+}

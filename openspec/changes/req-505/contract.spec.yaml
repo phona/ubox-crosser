@@ -1,0 +1,25 @@
+openapi: "3.0.3"
+info:
+  title: ubox-crosser Management API
+  description: HTTP management endpoints for the ubox-crosser proxy server.
+  version: "1.0.0"
+
+paths:
+  /version:
+    get:
+      summary: Get application version
+      description: Returns the running application version string.
+      operationId: getVersion
+      responses:
+        "200":
+          description: Version information
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - version
+                properties:
+                  version:
+                    type: string
+                    example: "v2"

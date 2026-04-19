@@ -62,6 +62,7 @@ services:
         condition: service_healthy
 
   # Test runner - executes integration tests
+  # NOTE: proxy-server HTTP port 8080 is used by version endpoint tests.
   test-runner:
     build:
       context: ..

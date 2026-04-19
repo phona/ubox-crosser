@@ -6,6 +6,7 @@
 FROM golang:1.23 AS builder
 
 ARG BINARY=server
+ARG LDFLAGS="-s -w"
 
 WORKDIR /src
 COPY go.mod go.sum ./
@@ -13,7 +14,7 @@ RUN go mod download
 
 COPY . .
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
-    go build -ldflags="-s -w" -o /app/crosser ./cmd/${BINARY}
+    go build -ldflags="${LDFLAGS}" -o /app/crosser ./cmd/${BINARY}
 
 # --- Runtime stage ---
 FROM ubuntu:22.04

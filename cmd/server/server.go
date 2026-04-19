@@ -3,13 +3,17 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"os"
+
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"os"
+
 	"github.com/phona/ubox-crosser/log"
 	"github.com/phona/ubox-crosser/models/config"
 	"github.com/phona/ubox-crosser/server"
 	"github.com/phona/ubox-crosser/utils/conf"
+	"github.com/phona/ubox-crosser/version"
 )
 
 func main() {
@@ -39,6 +43,21 @@ func main() {
 				logrus.Infoln("Using configuration from configure file")
 				logrus.Infof("Config init: %s", content)
 			}
+			var httpAddr string
+			if commonConfig, ok := configs[conf.CommonConfigName]; ok && commonConfig.HTTPAddress != "" {
+				httpAddr = commonConfig.HTTPAddress
+			} else {
+				for _, cfg := range configs {
+					if cfg.HTTPAddress != "" {
+						httpAddr = cfg.HTTPAddress
+						break
+					}
+				}
+			}
+			if httpAddr != "" {
+				startHTTPServer(httpAddr)
+			}
+
 			proxy := server.NewProxyServer(configs)
 			go proxy.Process()
 			func() {
@@ -79,8 +98,20 @@ func main() {
 	cmd.Flags().StringVar(&cmdConfig.LogFile, "log-file", "", "log file path")
 	cmd.Flags().StringVar(&cmdConfig.LogLevel, "log-level", "debug", "log file path")
 	cmd.Flags().StringVar(&cmdConfig.ConfigFile, "config-file", "", "config file path")
+	cmd.Flags().StringVar(&cmdConfig.HTTPAddress, "http-address", "", "HTTP listen address for version endpoint (e.g. :8080)")
 	if err := cmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(0)
 	}
+}
+
+func startHTTPServer(addr string) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", version.Handler())
+	go func() {
+		logrus.Infof("Starting HTTP server on %s", addr)
+		if err := http.ListenAndServe(addr, mux); err != nil {
+			logrus.Errorf("HTTP server error: %v", err)
+		}
+	}()
 }

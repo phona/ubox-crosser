@@ -6,7 +6,8 @@
         "login_password": "test-login-pass",
         "auth_password": "test-auth-pass",
         "log_file": "",
-        "log_level": "debug"
+        "log_level": "debug",
+        "http_address": "0.0.0.0:8080"
     },
     "test_service": {},
     "protocol_test": {}

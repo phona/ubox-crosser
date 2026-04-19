@@ -76,6 +76,7 @@ services:
       "
     environment:
       - PROXY_SERVER_ADDR=proxy-server:7000
+      - PROXY_HTTP_ADDR=proxy-server:8080
       - AUTH_SERVER_ADDR=auth-server:7002
       - ECHO_SERVER_ADDR=echo-server:9000
       - TEST_CIPHER_KEY=test-secret-key-123

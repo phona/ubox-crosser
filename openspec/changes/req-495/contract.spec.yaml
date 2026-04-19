@@ -1,0 +1,44 @@
+openapi: "3.0.3"
+info:
+  title: ubox-crosser Version API
+  version: "1.0.0"
+  description: Version information endpoint for ubox-crosser proxy server.
+
+paths:
+  /version:
+    get:
+      summary: Get build version information
+      operationId: getVersion
+      responses:
+        "200":
+          description: Version information returned successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VersionInfo"
+              example:
+                version: "v1.0.0"
+                commit: "abc123f"
+                buildTime: "2026-04-19T00:00:00Z"
+
+components:
+  schemas:
+    VersionInfo:
+      type: object
+      required:
+        - version
+        - commit
+        - buildTime
+      properties:
+        version:
+          type: string
+          description: Semantic version or git describe output. Defaults to "dev" if not injected.
+          example: "v1.0.0"
+        commit:
+          type: string
+          description: Short git commit hash. Defaults to "unknown" if not injected.
+          example: "abc123f"
+        buildTime:
+          type: string
+          description: UTC build timestamp in ISO 8601 format. Defaults to "unknown" if not injected.
+          example: "2026-04-19T00:00:00Z"

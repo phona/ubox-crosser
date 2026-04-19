@@ -3,6 +3,7 @@
         "key": "test-secret-key-123",
         "method": "chacha20",
         "address": "0.0.0.0:7000",
+        "management_address": "0.0.0.0:8080",
         "login_password": "test-login-pass",
         "auth_password": "test-auth-pass",
         "log_file": "",

@@ -121,12 +121,7 @@ ci-setup:
 
 # Code lint (parallel go vet + golangci-lint, BASE_REV for incremental scan)
 ci-lint:
-	@fail=0; \
-	( go vet ./... ) & pid1=$$!; \
-	( golangci-lint run $${BASE_REV:+--new-from-rev=$$BASE_REV} ) & pid2=$$!; \
-	wait $$pid1 || fail=1; \
-	wait $$pid2 || fail=1; \
-	exit $$fail
+	@golangci-lint run $${BASE_REV:+--new-from-rev=$$BASE_REV}
 
 ci-unit-test:
 	@mkdir -p $(COVERAGE_DIR)

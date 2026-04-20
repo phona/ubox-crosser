@@ -1,58 +1,131 @@
 ---
-spec_id: version-endpoint
 change_id: req-669
-title: "GET /version returns build metadata as JSON"
-layer: backend
+title: "version-endpoint"
 ---
 
 ## ADDED Requirements
 
-### Requirement: GET /version returns 200 with JSON body
-The server SHALL respond to `GET /version` with HTTP 200, `Content-Type: application/json`, and a JSON body containing `version`, `commit`, and `build_time` string fields.
+### Requirement: GET /version returns build metadata as JSON
 
-#### Scenario: Successful version query
+The admin HTTP server SHALL expose `GET /version` returning HTTP 200 with `Content-Type: application/json` and a JSON body containing `version`, `commit`, and `build_time` string fields.
+
+#### Scenario: ACCEPT-S1 Successful version query
+
+- **GIVEN** the server is running with `--admin-addr :8080`
 - **WHEN** a client sends `GET /version` to the admin HTTP listener
-- **THEN** the response status code SHALL be 200
-- **THEN** the `Content-Type` header SHALL be `application/json`
-- **THEN** the response body SHALL be valid JSON with exactly three fields: `version` (string), `commit` (string), `build_time` (string)
+- **THEN** the response status is `200 OK`
+- **AND** the response header `Content-Type` equals `application/json`
+- **AND** the body is valid JSON containing keys `version`, `commit`, `build_time`
+- **AND** `version` equals `"0.1.0"`
 
-#### Scenario: Version field matches compiled constant
+#### Scenario: ACCEPT-S2 Commit field is populated at build time
+
+- **GIVEN** the binary is built with `-ldflags -X github.com/phona/ubox-crosser/version.Commit=abc1234`
 - **WHEN** a client sends `GET /version`
-- **THEN** the `version` field in the response SHALL equal the `Version` constant defined in the `version` package (currently `0.1.0`)
+- **THEN** the `commit` field in the response body equals `"abc1234"`
 
-### Requirement: Non-GET methods are rejected
-The admin HTTP listener SHALL reject non-GET requests to `/version` with HTTP 405 Method Not Allowed, relying on Go 1.22+ method-based routing.
+#### Scenario: ACCEPT-S3 BuildTime field is populated at build time
 
-#### Scenario: POST to /version returns 405
+- **GIVEN** the binary is built with `-ldflags -X github.com/phona/ubox-crosser/version.BuildTime=2026-04-20T12:00:00Z`
+- **WHEN** a client sends `GET /version`
+- **THEN** the `build_time` field in the response body equals `"2026-04-20T12:00:00Z"`
+
+#### Scenario: ACCEPT-S4 Default values when ldflags not injected
+
+- **GIVEN** the binary is built without ldflags injection
+- **WHEN** a client sends `GET /version`
+- **THEN** `commit` equals `"unknown"`
+- **AND** `build_time` equals `"unknown"`
+
+---
+
+### Requirement: Non-GET methods on /version are rejected
+
+The `/version` endpoint is registered with `GET /version` pattern on `http.ServeMux`. Non-GET methods SHALL return HTTP 405 Method Not Allowed.
+
+#### Scenario: ACCEPT-S5 POST /version returns 405
+
+- **GIVEN** admin HTTP listener is running
 - **WHEN** a client sends `POST /version`
-- **THEN** the response status code SHALL be 405
+- **THEN** the response status is `405 Method Not Allowed`
 
-#### Scenario: PUT to /version returns 405
+#### Scenario: ACCEPT-S6 PUT /version returns 405
+
+- **GIVEN** admin HTTP listener is running
 - **WHEN** a client sends `PUT /version`
-- **THEN** the response status code SHALL be 405
+- **THEN** the response status is `405 Method Not Allowed`
 
-#### Scenario: DELETE to /version returns 405
+#### Scenario: ACCEPT-S7 DELETE /version returns 405
+
+- **GIVEN** admin HTTP listener is running
 - **WHEN** a client sends `DELETE /version`
-- **THEN** the response status code SHALL be 405
+- **THEN** the response status is `405 Method Not Allowed`
 
-### Requirement: Build metadata injected at compile time
-The `Commit` and `BuildTime` variables SHALL be populated via `-ldflags -X` during `go build`. When not injected, they SHALL default to `"unknown"`.
+---
 
-#### Scenario: Default values without ldflags
-- **WHEN** the binary is built without `-ldflags`
-- **THEN** `GET /version` SHALL return `commit: "unknown"` and `build_time: "unknown"`
+### Requirement: Unknown paths return 404
 
-#### Scenario: Injected values with ldflags
-- **WHEN** the binary is built with `-ldflags` setting `Commit` and `BuildTime`
-- **THEN** `GET /version` SHALL return the injected commit hash and build timestamp
+The admin HTTP server SHALL return HTTP 404 for any path other than `/version`.
 
-### Requirement: Admin HTTP listener binds to configurable address
-The server SHALL expose the admin HTTP listener on an address configurable via `--http-addr` flag, defaulting to `:8080`.
+#### Scenario: ACCEPT-S8 Request to root path returns 404
 
-#### Scenario: Default admin address
-- **WHEN** the server starts without `--http-addr` flag
-- **THEN** the admin HTTP listener SHALL bind to `:8080`
+- **GIVEN** admin HTTP listener is running
+- **WHEN** a client sends `GET /`
+- **THEN** the response status is `404 Not Found`
 
-#### Scenario: Custom admin address
-- **WHEN** the server starts with `--http-addr 127.0.0.1:9090`
-- **THEN** the admin HTTP listener SHALL bind to `127.0.0.1:9090`
+#### Scenario: ACCEPT-S9 Request to unknown path returns 404
+
+- **GIVEN** admin HTTP listener is running
+- **WHEN** a client sends `GET /metrics`
+- **THEN** the response status is `404 Not Found`
+
+---
+
+### Requirement: Admin address is configurable via CLI flag
+
+The server SHALL accept `--admin-addr` flag to configure the admin HTTP listener address, defaulting to `:8080`.
+
+#### Scenario: ACCEPT-S10 Custom admin address via CLI flag
+
+- **GIVEN** the server is started with `--admin-addr :9090`
+- **WHEN** a client sends `GET /version` to port 9090
+- **THEN** the response status is `200 OK`
+- **AND** port 8080 is not listening
+
+#### Scenario: ACCEPT-S11 Default admin address
+
+- **GIVEN** the server is started without `--admin-addr` flag
+- **WHEN** a client sends `GET /version` to port 8080
+- **THEN** the response status is `200 OK`
+
+---
+
+### Requirement: Build metadata injected via Makefile and Dockerfile
+
+The `Makefile` SHALL define ldflags that inject `version.Commit` (from `git rev-parse --short HEAD`) and `version.BuildTime` (from `date -u`) at build time. The `Dockerfile` SHALL pass these values as build args.
+
+#### Scenario: ACCEPT-S12 make build injects commit hash
+
+- **GIVEN** the repository has at least one commit
+- **WHEN** `make build` is executed
+- **THEN** `bin/server` binary reports a `commit` value matching `git rev-parse --short HEAD`
+
+#### Scenario: ACCEPT-S13 make build injects build time
+
+- **GIVEN** the build environment has a valid system clock
+- **WHEN** `make build` is executed
+- **THEN** `bin/server` binary reports a `build_time` value in ISO 8601 UTC format
+
+---
+
+### Requirement: Response body schema matches OpenAPI contract
+
+The JSON response body SHALL conform to the `VersionInfo` schema defined in `contract.spec.yaml`: an object with required string fields `version`, `commit`, and `build_time`.
+
+#### Scenario: ACCEPT-S14 Response matches VersionInfo schema
+
+- **GIVEN** admin HTTP listener is running
+- **WHEN** a client sends `GET /version`
+- **THEN** the response body is a JSON object
+- **AND** the object has exactly three keys: `version`, `commit`, `build_time`
+- **AND** all three values are strings

@@ -1,42 +1,55 @@
 ---
 change_id: req-669
-title: "GET /version endpoint — Technical Design"
+title: "GET /version endpoint (v4) — Design"
 ---
 
 ## Context
 
-ubox-crosser is a proxy tunnel server. Operators need runtime visibility into which version is deployed on each node. The server currently has no admin/health endpoints. This design adds a minimal admin HTTP listener with a single `GET /version` endpoint.
+ubox-crosser is a TCP-based proxy tunnel using a custom binary protocol. There is no built-in HTTP surface. Operators need a lightweight way to query the running build version, commit, and build timestamp without SSH access to verify deployments across proxy nodes.
+
+The `version` package and admin HTTP listener already exist from REQ-653. This change formalizes the v4 specification for the same capability.
 
 ## Goals / Non-Goals
 
 **Goals:**
-- Expose version, commit SHA, and build timestamp via a single JSON endpoint
-- Zero external dependencies (stdlib `net/http` only)
-- Compile-time injection via standard `-ldflags -X` pattern
+- Expose `GET /version` on a dedicated admin HTTP listener returning JSON build metadata
+- Inject `Commit` and `BuildTime` at compile time via `-ldflags -X`
+- Keep the admin server decoupled from the tunnel protocol
+- Accept only GET; reject other methods with 405
+- Return 404 for unknown paths
 
 **Non-Goals:**
-- Authentication on the admin endpoint (internal network only)
-- Health checks, metrics, or readiness probes (future work)
-- Graceful shutdown of the admin listener
+- Health-check, readiness, or metrics endpoints (future work)
+- Authentication or TLS on the admin listener
+- Dynamic version bumping or runtime-mutable metadata
 
 ## Decisions
 
-### Use Go 1.22+ method-based routing
-Register `"GET /version"` pattern on `http.ServeMux`. This rejects non-GET methods with 405 automatically without a custom middleware.
+### Decision 1: Separate HTTP admin server on its own port
 
-**Alternative**: Manual method check in handler — rejected because it duplicates what the stdlib already provides.
+The tunnel uses raw TCP with a custom binary protocol. Mixing HTTP into the TCP handler would break protocol compatibility and couple unrelated concerns.
 
-### Separate admin listener from proxy traffic
-The admin HTTP server runs on its own goroutine and address (`--admin-addr`, default `:8080`), isolated from the proxy data path.
+**Chosen:** Standalone `net/http.ServeMux` on `--admin-addr` (default `:8080`).
 
-**Alternative**: Multiplex on the proxy port — rejected because it complicates protocol detection and exposes admin endpoints to untrusted traffic.
+| Option | Pros | Cons |
+|--------|------|------|
+| Embed in TCP protocol | No extra port | Breaks binary protocol, clients must parse HTTP |
+| Separate HTTP server | Clean separation, standard tooling | Extra port to expose |
 
-### Hardcoded version constant + injected build vars
-`Version` is a compile-time constant in `version/version.go`. `Commit` and `BuildTime` are `var` with defaults, overridden by ldflags at build time.
+### Decision 2: Go 1.22+ method-based mux routing
 
-**Alternative**: Read from embedded file — rejected for simplicity; ldflags is the standard Go pattern.
+Register `"GET /version"` on `http.ServeMux` so the stdlib returns 405 for non-GET methods automatically — no manual method checking required.
+
+### Decision 3: Build-time injection via ldflags
+
+Use `go build -ldflags "-X pkg.Var=val"` for `Commit` and `BuildTime`. The `Version` constant is hardcoded (`0.1.0`) and changes only with code, not builds. Default values are `"unknown"` when ldflags are omitted.
+
+### Decision 4: Makefile and Dockerfile wire ldflags
+
+`Makefile` computes `GIT_COMMIT` and `BUILD_TIME` from shell commands and passes them as `-X` flags. `Dockerfile` forwards build args for the same purpose.
 
 ## Risks / Trade-offs
 
-- [Admin port exposed without auth] → Mitigated by binding to internal/loopback by default in production deployments; document in README.
-- [Admin server crash kills process] → `logrus.Fatalf` on listen failure is intentional; if the port is occupied, the operator should know immediately.
+- **[Unprotected admin port]** → The admin listener has no auth. Mitigation: bind to localhost or use network-level access control. Auth is a non-goal for this iteration.
+- **[Port conflict]** → Default `:8080` may conflict with other services. Mitigation: configurable via `--admin-addr` flag.
+- **[Stale metadata]** → If the binary is copied without rebuilding, `commit`/`build_time` reflect the original build. Mitigation: this is expected behavior; documented via default `"unknown"` values.

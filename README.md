@@ -13,4 +13,4 @@ It supports encrypt & decrypt data between proxy server and internal server, tho
 
 | Version | Date | Changes |
 |---------|------|---------|
-| v0.0.1 | 2026-04-20 | Initial sisyphus pipeline test |
+| v0.0.1 | 2026-04-20 | Initial release with socks5 reverse proxy support |

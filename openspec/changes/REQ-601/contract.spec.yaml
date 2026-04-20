@@ -1,0 +1,109 @@
+openapi: "3.1.0"
+info:
+  title: ubox-crosser Health API
+  version: "1.0.0"
+  description: |
+    HTTP health-check API for the ubox-crosser proxy server.
+    Locked contract for REQ-601. Any change to path / method / status / header /
+    body field names breaks the contract and requires a new REQ.
+
+servers:
+  - url: http://localhost:8080
+    description: |
+      Default suggested health listener (configurable via `health_address`
+      config field or `--health-address` CLI flag). Empty value disables the
+      listener.
+
+paths:
+  /health:
+    get:
+      operationId: getHealth
+      summary: Liveness health check
+      description: Returns HTTP 200 with `{"status":"ok"}` when the proxy server process is running.
+      responses:
+        "200":
+          description: Server is alive.
+          headers:
+            Content-Type:
+              schema:
+                type: string
+                enum: ["application/json"]
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+              example:
+                status: ok
+    post:
+      operationId: postHealthNotAllowed
+      summary: Method not allowed
+      responses:
+        "405":
+          description: Only GET is allowed.
+          headers:
+            Allow:
+              schema:
+                type: string
+                enum: ["GET"]
+    put:
+      operationId: putHealthNotAllowed
+      summary: Method not allowed
+      responses:
+        "405":
+          description: Only GET is allowed.
+          headers:
+            Allow:
+              schema:
+                type: string
+                enum: ["GET"]
+    delete:
+      operationId: deleteHealthNotAllowed
+      summary: Method not allowed
+      responses:
+        "405":
+          description: Only GET is allowed.
+          headers:
+            Allow:
+              schema:
+                type: string
+                enum: ["GET"]
+    patch:
+      operationId: patchHealthNotAllowed
+      summary: Method not allowed
+      responses:
+        "405":
+          description: Only GET is allowed.
+          headers:
+            Allow:
+              schema:
+                type: string
+                enum: ["GET"]
+
+  /{path}:
+    get:
+      operationId: catchAllNotFound
+      summary: Unknown path
+      parameters:
+        - name: path
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "404":
+          description: Path not found. Only `/health` is served.
+
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum: ["ok"]
+          description: Always literal "ok" while the server is alive.
+      example:
+        status: ok

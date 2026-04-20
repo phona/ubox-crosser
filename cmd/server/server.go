@@ -6,6 +6,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"os"
+	internalconfig "github.com/phona/ubox-crosser/internal/config"
 	"github.com/phona/ubox-crosser/log"
 	"github.com/phona/ubox-crosser/models/config"
 	"github.com/phona/ubox-crosser/server"
@@ -15,7 +16,8 @@ import (
 func main() {
 	var cmdConfig config.ServerConfig
 	cmd := &cobra.Command{
-		Use: "UBox-crosser server",
+		Use:     "UBox-crosser server",
+		Version: internalconfig.FullVersion(),
 		Run: func(cmd *cobra.Command, args []string) {
 			var configs map[string]config.ServerConfig
 			var err error

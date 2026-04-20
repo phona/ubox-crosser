@@ -7,6 +7,7 @@ import (
 	"github.com/shadowsocks/shadowsocks-go/shadowsocks"
 	"github.com/spf13/cobra"
 	"os"
+	internalconfig "github.com/phona/ubox-crosser/internal/config"
 	"github.com/phona/ubox-crosser/log"
 	"github.com/phona/ubox-crosser/models/config"
 	"github.com/phona/ubox-crosser/server"
@@ -16,7 +17,8 @@ import (
 func main() {
 	var cmdConfig config.AuthServerConfig
 	cmd := &cobra.Command{
-		Use: "UBox-crosser authenticated server",
+		Use:     "UBox-crosser authenticated server",
+		Version: internalconfig.FullVersion(),
 		Run: func(cmd *cobra.Command, args []string) {
 			var fileConfig config.AuthServerConfig
 			if err := conf.ParseConfigFile(cmdConfig.ConfigFile, &fileConfig); err != nil {

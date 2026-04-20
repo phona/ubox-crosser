@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 	"os"
 	"github.com/phona/ubox-crosser/client"
+	internalconfig "github.com/phona/ubox-crosser/internal/config"
 	"github.com/phona/ubox-crosser/log"
 	"github.com/phona/ubox-crosser/models/config"
 	"github.com/phona/ubox-crosser/utils/conf"
@@ -16,7 +17,8 @@ import (
 func main() {
 	var cmdConfig config.ClientConfig
 	cmd := &cobra.Command{
-		Use: "UBox-crosser server",
+		Use:     "UBox-crosser client",
+		Version: internalconfig.FullVersion(),
 		Run: func(cmd *cobra.Command, args []string) {
 			var fileConfig config.ClientConfig
 			if err := conf.ParseConfigFile(cmdConfig.ConfigFile, &fileConfig); err != nil {

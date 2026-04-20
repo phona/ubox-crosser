@@ -7,16 +7,24 @@ title: "Tasks: GET /version endpoint (v2)"
 
 ## Stage 0 — Spec & Contract Lock (accept-spec)
 
-- [x] 审查 proposal.md、design.md、specs/FEATURE-S1.md、contract.spec.yaml 一致性
-- [x] contract.spec.yaml 定义 GET /version 200 响应 + 405 响应
-- [x] FEATURE-S1 覆盖：200 + JSON body 三字段 + Non-GET 405
-- [x] BKD analyze issue (#642) 确认 `layer:backend` tag
+- [x] 审查 proposal.md、design.md、specs/version-endpoint/spec.md、contract.spec.yaml 一致性
+- [x] 修复：proposal.md 补充 Capabilities/Impact 节，移除 `status: implementing`
+- [x] 修复：design.md 重构为 Context/Goals/Decisions/Risks 标准格式
+- [x] 修复：contract.spec.yaml 升级至 OpenAPI 3.1.0
+- [x] 修复：contract.spec.yaml 补充 POST/PUT/DELETE/PATCH 405 响应 + `Allow: GET` header
+- [x] 修复：contract.spec.yaml 补充 catch-all 404 路径
+- [x] 修复：contract.spec.yaml 补充 `additionalProperties: false` 和 `security: []`
+- [x] 修复：specs/ 从单文件 FEATURE-S1.md 扩展为完整 spec.md（S1-S11 全场景）
+- [x] BKD issue 确认 `layer:backend` tag
+- [x] BKD issue move → `review`
 
 ### 审查备注
 
 > **与 REQ-601 的关系**：REQ-601 规划了独立 health HTTP listener（`--health-address`），但 REQ-601 尚未合入 health endpoint 实现。REQ-642 作为独立特性先行实现 `--http-addr` listener，仅挂载 `/version`。若后续 REQ-601 合入，需协调将 `/version` 迁移到共享 mux，此为后续 REQ 范围，不影响 REQ-642 交付。
-
-> **contract.spec.yaml 精简**：当前 contract 仅覆盖 200 和 405，未定义 404（unknown path）和 trailing-slash 行为。REQ-642 scope 限定为单一 `/version` 端点，路由兜底行为由 `net/http` 默认 mux 决定，不纳入 contract 约束。
+>
+> **handler.go 405 缺 Allow header**：当前实现 `version/handler.go` 在非 GET 方法时仅返回 405，未设置 `Allow: GET` 响应头。spec FEATURE-S6/S6b 要求必须带 `Allow: GET`。留待 Stage 2 修复。
+>
+> **未知路径 404 处理**：contract 已补充 catch-all 404。当前 `cmd/server/server.go` 仅注册 `/version`，Go 1.22+ `ServeMux` 默认对未注册路径返回 404，但 `/version/`（带尾斜杠）行为需在 Stage 2 验证并修复。
 
 ## Stage 1 — Dev-Spec Decisions
 

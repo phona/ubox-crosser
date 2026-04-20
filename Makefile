@@ -117,11 +117,11 @@ ci-env:
 
 ci-setup:
 	go mod download
-	@which golangci-lint > /dev/null 2>&1 || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $$(go env GOPATH)/bin v1.62.2
+	@curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $$(go env GOPATH)/bin v1.62.2
 
 # Code lint (parallel go vet + golangci-lint, BASE_REV for incremental scan)
 ci-lint:
-	@golangci-lint run $${BASE_REV:+--new-from-rev=$$BASE_REV}
+	@export PATH="$$(go env GOPATH)/bin:$$PATH"; golangci-lint run $${BASE_REV:+--new-from-rev=$$BASE_REV}
 
 ci-unit-test:
 	@mkdir -p $(COVERAGE_DIR)

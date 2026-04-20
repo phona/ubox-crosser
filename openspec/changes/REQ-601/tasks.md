@@ -5,9 +5,9 @@
 
 ## Stage 1 — Spec & Contract Lock
 
-- [ ] 确认 `proposal.md`、`design.md`、`specs/health-endpoint/spec.md`、`contract.spec.yaml` 内容一致（路径、方法、状态码、响应字段命名）
-- [ ] BKD issue 上挂 `layer:backend` tag
-- [ ] BKD issue move → `review`，等待 spec 审核
+- [x] 确认 `proposal.md`、`design.md`、`specs/health-endpoint/spec.md`、`contract.spec.yaml` 内容一致（路径、方法、状态码、响应字段命名）
+- [x] BKD issue 上挂 `layer:backend` tag
+- [x] BKD issue move → `review`，等待 spec 审核
 
 ## Stage 2 — Backend Dev
 

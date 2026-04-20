@@ -38,6 +38,18 @@ func NewProxyServer(configs map[string]config.ServerConfig) *ProxyServer {
 	for _, config_ := range configs {
 		go server.initWorker(&listenedAddr, config_)
 	}
+
+	var healthAddr string
+	for _, cfg := range configs {
+		if cfg.HealthAddress != "" {
+			healthAddr = cfg.HealthAddress
+			break
+		}
+	}
+	if healthAddr != "" {
+		go server.startHealthServer(healthAddr)
+	}
+
 	return server
 }
 

@@ -14,4 +14,8 @@
 - [x] [REQ-736-A5] Endpoint accessible without authentication
 
 ## Stage: implementation (owner: dev-agent)
-- [ ] TODO: 列出要实现的模块（uptime 包、Init/Handler、路由注册、单元测试）
+- [ ] [IMP-1] 创建 `uptime/handler.go`：package-level `startTime`，`Init()` 记录启动时间，`Handler` 返回 JSON `{"uptime_seconds": N}`，非 GET 返回 405
+- [ ] [IMP-2] 创建 `uptime/handler_test.go`：单元测试覆盖 S1–S4 场景（200+JSON、elapsed time、405、no extra fields）
+- [ ] [IMP-3] `models/config/config.go` ServerConfig 增加 `AdminAddress` 字段（json: `admin_address`）
+- [ ] [IMP-4] `cmd/server/server.go`：增加 `--admin-address` flag，启动时调用 `uptime.Init()`，创建 admin `http.ServeMux` 注册 `GET /uptime`，启动 HTTP listener
+- [ ] [IMP-5] `go vet` / `go build` / `make unit-test` 全部通过

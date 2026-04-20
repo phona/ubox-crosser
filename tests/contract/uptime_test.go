@@ -27,7 +27,7 @@ func newUptimeHandler(startTime time.Time) http.HandlerFunc {
 		}
 		secs := int(time.Since(startTime).Seconds())
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(uptimeResponse{UptimeSeconds: secs})
+		_ = json.NewEncoder(w).Encode(uptimeResponse{UptimeSeconds: secs})
 	}
 }
 

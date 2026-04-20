@@ -109,6 +109,9 @@ test-clean:
 # CI Standard Interface
 # ═══════════════════════════════════════════════════
 
+# Ensure go / golangci-lint are on PATH even in minimal CI shells
+export PATH := /usr/local/go/bin:$(shell go env GOPATH 2>/dev/null || echo "/root/go")/bin:$(PATH)
+
 .PHONY: ci-env ci-setup ci-lint ci-unit-test ci-integration-test ci-build
 
 ci-env:

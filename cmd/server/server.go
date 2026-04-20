@@ -11,6 +11,7 @@ import (
 
 	"github.com/phona/ubox-crosser/log"
 	"github.com/phona/ubox-crosser/models/config"
+	"github.com/phona/ubox-crosser/ping"
 	"github.com/phona/ubox-crosser/server"
 	"github.com/phona/ubox-crosser/utils/conf"
 	"github.com/phona/ubox-crosser/version"
@@ -48,6 +49,7 @@ func main() {
 			go proxy.Process()
 
 			mux := http.NewServeMux()
+			mux.HandleFunc("GET /ping", ping.Handler)
 			mux.HandleFunc("GET /version", version.Handler)
 			go func() {
 				logrus.Infof("Admin HTTP server listening on %s", adminAddr)

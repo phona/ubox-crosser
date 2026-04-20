@@ -121,7 +121,7 @@ ci-setup:
 
 # Code lint (parallel go vet + golangci-lint, BASE_REV for incremental scan)
 ci-lint:
-	@golangci-lint run $${BASE_REV:+--new-from-rev=$$BASE_REV}
+	@export PATH="$$(go env GOPATH)/bin:$$PATH"; golangci-lint run $${BASE_REV:+--new-from-rev=$$BASE_REV}
 
 ci-unit-test:
 	@mkdir -p $(COVERAGE_DIR)

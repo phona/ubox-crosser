@@ -1,36 +1,37 @@
 ---
 capability: uptime-endpoint
 change_id: REQ-736
+status: ADDED
 ---
 
-## Scenario: REQ-736-A1 — Normal uptime response
+## Scenario: REQ-736-S1 — GET /uptime returns 200 with JSON body
 
-**Given** the ubox-crosser service is running
-**When** a user sends `GET /uptime`
-**Then** the response status is `200 OK`
-**And** the response body is JSON containing `{"uptime_seconds": <integer>}`
-**And** `uptime_seconds` is a non-negative integer
+**Given** the server is running and uptime.Init() has been called
+**When** a client sends `GET /uptime`
+**Then** the response status code is `200`
+**And** the `Content-Type` header is `application/json`
+**And** the body is a JSON object with exactly one key `uptime_seconds` whose value is a non-negative integer
 
-## Scenario: REQ-736-A2 — Uptime value increases over time
+## Scenario: REQ-736-S2 — uptime_seconds reflects elapsed time
 
-**Given** the ubox-crosser service has been running for at least 2 seconds
-**When** a user sends `GET /uptime` at time T1, waits 2 seconds, then sends `GET /uptime` at time T2
-**Then** the `uptime_seconds` value at T2 is greater than or equal to the value at T1 + 1
+**Given** the server has been running for at least 1 second after Init()
+**When** a client sends `GET /uptime`
+**Then** `uptime_seconds` >= 1
 
-## Scenario: REQ-736-A3 — Uptime resets after restart
+## Scenario: REQ-736-S3 — Non-GET methods return 405
 
-**Given** the ubox-crosser service is restarted
-**When** a user sends `GET /uptime` within 5 seconds of the restart
-**Then** `uptime_seconds` is less than 5
+**Given** the server is running
+**When** a client sends `POST /uptime`
+**Then** the response status code is `405`
 
-## Scenario: REQ-736-A4 — Non-GET methods are rejected
+**When** a client sends `PUT /uptime`
+**Then** the response status code is `405`
 
-**Given** the ubox-crosser service is running
-**When** a user sends `POST /uptime`
-**Then** the response status is `405 Method Not Allowed`
+**When** a client sends `DELETE /uptime`
+**Then** the response status code is `405`
 
-## Scenario: REQ-736-A5 — Endpoint does not require authentication
+## Scenario: REQ-736-S4 — Response body has no extra fields
 
-**Given** the ubox-crosser service is running
-**When** an unauthenticated user sends `GET /uptime`
-**Then** the response status is `200 OK` (not 401/403)
+**Given** the server is running
+**When** a client sends `GET /uptime`
+**Then** the JSON response contains exactly the key `uptime_seconds` and no additional keys

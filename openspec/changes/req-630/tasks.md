@@ -14,32 +14,50 @@
 
 > **与 REQ-601 HTTP listener 协调**：REQ-601 design 已规划独立 health HTTP listener（`--health-address`），REQ-630 规划独立 `--http-addr` listener。两者默认端口均为 `:8080`。实现阶段应将 `/version` 注册到 REQ-601 的 health mux 上共享同一 HTTP listener，而非创建第二个独立 listener。此决策留待 dev-spec 阶段确认。
 
-## 1. Version Package
+## Stage 1 — Dev-Spec Decisions
 
-- [ ] 1.1 Create `internal/version/version.go` with `Version`, `Commit`, `BuildTime` vars (defaults: `"0.1.0"`, `"unknown"`, `"unknown"`)
-- [ ] 1.2 Create `internal/version/handler.go` with `Handler()` returning an `http.HandlerFunc` that writes JSON `{"version","commit","build_time"}`
+- [x] **确认 REQ-601 协调决策**：`/version` 复用 REQ-601 的 health HTTP mux（`--health-address` 配置），不新增 `--http-addr` flag。理由：同属运维端点，共享 mux 避免额外端口和配置负担。
+- [x] **确认包路径**：`internal/version`（非 `internal/buildinfo`），与 proposal/design 一致。
+- [x] **确认 JSON 序列化方式**：`encoding/json.Marshal`（非字面量），因版本字段值编译时确定，可能含需转义字符。
+- [x] **确认不引入第三方依赖**：contract test 用 `net/http/httptest` + 手工 JSON 断言，不用 `kin-openapi`。
 
-## 2. HTTP Server Integration
+## Stage 2 — Backend Dev
 
-- [ ] 2.1 Add `--http-addr` flag (default `:8080`) to `cmd/server/server.go`（或复用 REQ-601 的 `--health-address`，见 Stage 0 备注）
-- [ ] 2.2 Register `GET /version` on `http.ServeMux` and start HTTP listener in a goroutine before the proxy loop
+> **前置依赖**：REQ-601 health endpoint 已合入（`server/health.go` + `newHealthMux()` 存在）。
 
-## 3. Build Pipeline
+- [ ] 新增 `internal/version/version.go`：声明 `var (Version = "0.1.0"; Commit = "unknown"; BuildTime = "unknown")`
+- [ ] 新增 `internal/version/handler.go`：实现 `Handler() http.HandlerFunc`，用 `json.Marshal` 序列化 `VersionResponse{Version, Commit, BuildTime}` 并写入响应，设置 `Content-Type: application/json`
+- [ ] 修改 `server/health.go`：在 `newHealthMux()` 中注册 `GET /version` 到 `version.Handler()`，非 GET 返回 405 + `Allow: GET`
+- [ ] 更新 `Makefile` 的 `build` target：ldflags 添加 `-X $(MODULE)/internal/version.Version=$(VERSION) -X $(MODULE)/internal/version.Commit=$(shell git rev-parse --short HEAD) -X $(MODULE)/internal/version.BuildTime=$(shell date -u +%Y-%m-%dT%H:%M:%SZ)`
+- [ ] 本地编译通过：`make build` / `go build ./...`
 
-- [ ] 3.1 Update `Makefile` build target to inject `Version`, `Commit`, `BuildTime` via `-ldflags -X`
-- [ ] 3.2 Verify `make build && ./bin/server --help` shows no regression
+## Stage 3 — Unit Test
 
-## 4. Unit Tests
+- [ ] 新增 `internal/version/handler_test.go`：覆盖 FEATURE-S1（GET 200 + JSON body 三字段）、FEATURE-S2 ~ S4（ldflags 注入值反映在响应中）、FEATURE-S11（默认值）
+- [ ] 新增方法测试：覆盖 FEATURE-S6 / S6b（POST/PUT → 405 + `Allow: GET`）
+- [ ] 新增路径测试：FEATURE-S8（`/` → 404）、S9（`/metrics` → 404）、S10（`/version/` → 404）
+- [ ] `go test ./internal/version/... ./server/...` 全绿
+- [ ] `golangci-lint run ./...` 无新增告警
 
-- [ ] 4.1 Create `internal/version/handler_test.go` — test HTTP 200, Content-Type, JSON body fields (FEATURE-S1, S2, S5, S11)
-- [ ] 4.2 Add test for POST → 405 + Allow header (FEATURE-S6)
-- [ ] 4.3 Add tests for unknown path 404 and trailing slash 404 (FEATURE-S8, S9, S10)
+## Stage 4 — Integration Test (Contract Lock)
 
-## 5. Contract Tests
+- [ ] 新增 `tests/integration/version_contract_test.go`，按 `contract.spec.yaml` 锁定路径、方法、状态码、header、body 字段
+- [ ] 覆盖 FEATURE-S5（无认证访问成功）
+- [ ] 覆盖 health_address 为空时 `/version` 不可访问
+- [ ] `make test-integration` 在本地 docker compose 中通过
 
-- [ ] 5.1 Create contract test — validate response against `contract.spec.yaml` schema
-- [ ] 5.2 `go test ./...` 全绿
-- [ ] 5.3 `golangci-lint run ./...` 无新增告警
+## Stage 5 — Verify
+
+- [ ] CI 流水线（unit + integration + lint）全部 pass
+- [ ] 在 vm-node04 上拉镜像/二进制，启动 `--health-address :8080`，`curl -i http://vm-node04:8080/version` 返回 200 + 正确 body
+- [ ] `curl -X POST http://vm-node04:8080/version` 返回 405 + `Allow: GET`
+- [ ] 确认 body 中 `version`、`commit`、`build_time` 字段值与构建参数一致
+
+## Stage 6 — Accept
+
+- [ ] 截图/日志归档到 BKD issue
+- [ ] BKD issue move → `review`（人工确认后人工 → `done`）
+- [ ] 触发 `openspec archive REQ-630`，把 spec-delta merge 进主 spec
 
 ## Stage: Contract Test (owner: contract-test-agent)
 

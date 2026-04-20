@@ -3,9 +3,13 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"os"
+
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"os"
+
+	"github.com/phona/ubox-crosser/api"
 	"github.com/phona/ubox-crosser/log"
 	"github.com/phona/ubox-crosser/models/config"
 	"github.com/phona/ubox-crosser/server"
@@ -14,6 +18,7 @@ import (
 
 func main() {
 	var cmdConfig config.ServerConfig
+	var apiAddr string
 	cmd := &cobra.Command{
 		Use: "UBox-crosser server",
 		Run: func(cmd *cobra.Command, args []string) {
@@ -39,6 +44,17 @@ func main() {
 				logrus.Infoln("Using configuration from configure file")
 				logrus.Infof("Config init: %s", content)
 			}
+			if apiAddr != "" {
+				mux := http.NewServeMux()
+				mux.HandleFunc("/version", api.VersionHandler)
+				go func() {
+					logrus.Infof("API server listening on %s", apiAddr)
+					if err := http.ListenAndServe(apiAddr, mux); err != nil {
+						logrus.Errorf("API server error: %v", err)
+					}
+				}()
+			}
+
 			proxy := server.NewProxyServer(configs)
 			go proxy.Process()
 			func() {
@@ -79,6 +95,7 @@ func main() {
 	cmd.Flags().StringVar(&cmdConfig.LogFile, "log-file", "", "log file path")
 	cmd.Flags().StringVar(&cmdConfig.LogLevel, "log-level", "debug", "log file path")
 	cmd.Flags().StringVar(&cmdConfig.ConfigFile, "config-file", "", "config file path")
+	cmd.Flags().StringVar(&apiAddr, "api-addr", ":8080", "HTTP API listen address")
 	if err := cmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(0)

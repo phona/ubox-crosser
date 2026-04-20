@@ -3,6 +3,13 @@ MODULE := github.com/phona/ubox-crosser
 BINARIES := client server auth_server
 COVERAGE_DIR := coverage
 BUILD_ID ?= $(shell date +%s)
+VERSION ?= 0.1.0
+COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+BUILD_TIME := $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
+LDFLAGS := -s -w \
+	-X $(MODULE)/version.Version=$(VERSION) \
+	-X $(MODULE)/version.Commit=$(COMMIT) \
+	-X $(MODULE)/version.BuildTime=$(BUILD_TIME)
 
 # ===========================================
 # Build Commands
@@ -12,9 +19,9 @@ BUILD_ID ?= $(shell date +%s)
 
 build: $(SOURCES)
 	@echo "=== Building binaries ==="
-	CGO_ENABLED=0 go build -ldflags="-s -w" -o bin/client ./cmd/client
-	CGO_ENABLED=0 go build -ldflags="-s -w" -o bin/server ./cmd/server
-	CGO_ENABLED=0 go build -ldflags="-s -w" -o bin/auth_server ./cmd/auth_server
+	CGO_ENABLED=0 go build -ldflags='$(LDFLAGS)' -o bin/client ./cmd/client
+	CGO_ENABLED=0 go build -ldflags='$(LDFLAGS)' -o bin/server ./cmd/server
+	CGO_ENABLED=0 go build -ldflags='$(LDFLAGS)' -o bin/auth_server ./cmd/auth_server
 
 clean:
 	rm -rf bin/ $(COVERAGE_DIR)/

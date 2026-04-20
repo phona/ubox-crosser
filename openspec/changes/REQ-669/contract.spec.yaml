@@ -1,0 +1,34 @@
+openapi: "3.0.3"
+info:
+  title: ubox-crosser API
+  version: "0.1.0"
+paths:
+  /version:
+    get:
+      summary: Get server build information
+      operationId: getVersion
+      responses:
+        "200":
+          description: Build metadata
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - version
+                  - commit
+                  - build_time
+                properties:
+                  version:
+                    type: string
+                    example: "0.1.0"
+                  commit:
+                    type: string
+                    example: "abc1234"
+                  build_time:
+                    type: string
+                    format: date-time
+                    example: "2025-01-01T00:00:00Z"
+                additionalProperties: false
+        "405":
+          description: Method not allowed

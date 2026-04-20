@@ -39,7 +39,7 @@ func TestUptime_GET_Returns200WithJSON(t *testing.T) {
 
 	resp, err := http.Get(srv.URL + "/uptime")
 	require.NoError(t, err)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	assert.Contains(t, resp.Header.Get("Content-Type"), "application/json")
@@ -58,7 +58,7 @@ func TestUptime_ReflectsElapsedTime(t *testing.T) {
 
 	resp, err := http.Get(srv.URL + "/uptime")
 	require.NoError(t, err)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	var body uptimeResponse
 	require.NoError(t, json.NewDecoder(resp.Body).Decode(&body))
@@ -77,7 +77,7 @@ func TestUptime_NonGET_Returns405(t *testing.T) {
 			require.NoError(t, err)
 			resp, err := http.DefaultClient.Do(req)
 			require.NoError(t, err)
-			defer resp.Body.Close()
+			defer func() { _ = resp.Body.Close() }()
 			assert.Equal(t, http.StatusMethodNotAllowed, resp.StatusCode)
 		})
 	}
@@ -91,7 +91,7 @@ func TestUptime_NoExtraFields(t *testing.T) {
 
 	resp, err := http.Get(srv.URL + "/uptime")
 	require.NoError(t, err)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	var raw map[string]interface{}
 	require.NoError(t, json.NewDecoder(resp.Body).Decode(&raw))

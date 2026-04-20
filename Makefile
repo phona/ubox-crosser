@@ -116,11 +116,11 @@ ci-env:
 	@echo "NEEDS_DOCKER=true"
 
 ci-setup:
-	@export PATH="/usr/local/go/bin:$$PATH"; go mod download
+	@export PATH="$$PATH:/usr/local/go/bin"; go mod download
 
 # Code lint (parallel go vet + golangci-lint, BASE_REV for incremental scan)
 ci-lint:
-	@export PATH="/usr/local/go/bin:$$PATH"; golangci-lint run $${BASE_REV:+--new-from-rev=$$BASE_REV}
+	@export PATH="$$PATH:/usr/local/go/bin"; golangci-lint run $${BASE_REV:+--new-from-rev=$$BASE_REV}
 
 ci-unit-test:
 	@mkdir -p $(COVERAGE_DIR)

@@ -40,3 +40,14 @@
 - [ ] 5.1 Create contract test — validate response against `contract.spec.yaml` schema
 - [ ] 5.2 `go test ./...` 全绿
 - [ ] 5.3 `golangci-lint run ./...` 无新增告警
+
+## Stage: Contract Test (owner: contract-test-agent)
+
+- [x] [FEATURE-S1] TestVersion_S1_Returns200WithJSON — verify HTTP 200, Content-Type application/json, exactly 3 required string fields (version, commit, build_time), no extra fields
+- [x] [FEATURE-S5] TestVersion_S5_NoAuthRequired — verify unauthenticated GET /version returns 200
+- [x] [FEATURE-S6] TestVersion_S6_PostReturns405 — verify POST /version returns 405 + Allow: GET header
+- [x] [FEATURE-S6b] TestVersion_S6b_PutReturns405 — verify PUT /version returns 405 + Allow: GET header
+- [x] [FEATURE-S8] TestVersion_S8_RootPathReturns404 — verify GET / returns 404
+- [x] [FEATURE-S9] TestVersion_S9_UnknownPathReturns404 — verify GET /metrics returns 404
+- [x] [FEATURE-S10] TestVersion_S10_TrailingSlashReturns404 — verify GET /version/ returns 404
+- [x] [FEATURE-S11] TestVersion_S11_DefaultFieldsPresent — verify all fields present and non-empty in default build

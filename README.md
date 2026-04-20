@@ -8,3 +8,7 @@ It supports encrypt & decrypt data between proxy server and internal server, tho
 ## Architecture
 
 ![architecture](/pic/architecture.png)
+
+## Version
+
+- v0.0.1 - sisyphus pipeline test

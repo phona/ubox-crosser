@@ -10,10 +10,10 @@ ubox-crosser currently has no way to report its build version at runtime. Operat
 ## What Changes
 
 - Add a new `internal/version` package exposing `Version`, `Commit`, and `BuildTime` variables (injected via `-ldflags` at compile time).
-- Introduce a minimal `net/http` server bound to a configurable HTTP port on the proxy-server binary, serving `GET /version`.
+- Register `GET /version` on REQ-601's shared health HTTP mux (`--health-address`), no new listener or flag.
 - Update the `Makefile` build target to inject git SHA and ISO 8601 timestamp via `-ldflags -X`.
 - Add unit tests for the `/version` handler (200, correct Content-Type, all three JSON fields present).
-- Add a contract test validating the response against the OpenAPI schema.
+- Add contract tests using `net/http/httptest` with hand-written JSON assertions (no third-party validator).
 
 ## Capabilities
 
@@ -26,7 +26,7 @@ _(none)_
 
 ## Impact
 
-- **Code**: New `internal/version/` package; new HTTP listener in `cmd/server`.
+- **Code**: New `internal/version/` package; route registration in `server/health.go` (REQ-601's mux).
 - **Build**: Makefile ldflags change (non-breaking, additive).
 - **Dependencies**: stdlib only (`net/http`, `encoding/json`). No new third-party deps.
-- **Operations**: A new TCP port will be opened for HTTP; must be documented and configurable.
+- **Operations**: No new port — shares REQ-601's `--health-address` listener.

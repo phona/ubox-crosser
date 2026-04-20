@@ -10,7 +10,7 @@ info:
 servers:
   - url: http://localhost:8080
     description: |
-      Default suggested HTTP listener (configurable via `--http-addr` CLI flag).
+      Shared health HTTP listener (configurable via `--health-address` CLI flag, provided by REQ-601).
 
 paths:
   /version:

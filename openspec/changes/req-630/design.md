@@ -38,28 +38,34 @@ ubox-crosser is a TCP-only SOCKS5 reverse proxy. There is no HTTP server in the 
 
 **Rationale:** `internal/` keeps it project-private. Any binary can import it. `-ldflags -X` targets the full package path.
 
-### 3. HTTP listener lifecycle
+### 3. HTTP listener lifecycle — shared with REQ-601
 
-**Choice:** Start the HTTP server in a separate goroutine from `cmd/server/main.go`, on a configurable `--http-addr` flag (default `:8080`). Log fatal if bind fails.
+**Choice:** Register `/version` on REQ-601's health HTTP mux (`newHealthMux()`), configured via `--health-address` (default `:8080`). No new listener or flag.
 
 **Alternatives considered:**
+- Separate `--http-addr` listener: Adds a second port for operators to manage; both default to `:8080` causing conflicts.
 - Embedding in the existing TCP accept loop: Mixing protocols on the same listener adds complexity.
 - Separate binary: Over-engineering; version info belongs to the binary it describes.
 
-**Rationale:** Independent goroutine keeps HTTP decoupled from the TCP proxy path. Fail-fast on bind error prevents silent misconfiguration.
+**Rationale:** `/version` and `/healthz` are both operational endpoints. Sharing the health mux avoids extra port and configuration burden. REQ-601's health listener already runs in an independent goroutine with fail-fast on bind error.
 
-### 4. Contract test approach
+> **Updated in dev-spec stage:** Original design proposed a standalone `--http-addr` listener. Stage 1 review confirmed sharing REQ-601's health mux is the better approach.
 
-**Choice:** Go test that loads `contract.spec.yaml`, makes an HTTP request to the handler, and validates the response against the OpenAPI 3.0 schema using `kin-openapi` (or equivalent).
+### 4. Contract test approach — stdlib only
+
+**Choice:** Go test using `net/http/httptest` + hand-written JSON assertions. No OpenAPI validator library.
 
 **Alternatives considered:**
+- `kin-openapi` schema validator: Adds a test-only dependency to `go.sum` for a single endpoint with a trivial schema.
 - Shell-based `curl` + `yq` validation: Fragile, not portable.
 - Schemathesis / Dredd: External tool dependency; heavy for one endpoint.
 
-**Rationale:** Keeps validation in Go test toolchain. `kin-openapi` is a well-maintained OpenAPI 3 validator.
+**Rationale:** The contract has exactly one endpoint with three string fields. Hand-written assertions are sufficient and avoid any new dependency. `httptest.NewServer` provides a full HTTP round-trip without network overhead.
+
+> **Updated in dev-spec stage:** Original design proposed `kin-openapi`. Stage 1 review confirmed hand-written assertions are adequate given the minimal schema.
 
 ## Risks / Trade-offs
 
-- **New listening port** → Operators must open/configure a second port. Mitigation: default to `:8080`, document clearly.
-- **`kin-openapi` dependency for tests only** → Adds to `go.sum`. Mitigation: test-only import; does not affect binary size.
-- **Version defaults to `dev`** → If built without ldflags (e.g., `go run`), version fields show defaults. Mitigation: acceptable for development; CI always injects real values.
+- **REQ-601 dependency** → `/version` cannot be implemented until REQ-601's health listener (`newHealthMux()`) is merged. Mitigation: Stage 2 marks this as a prerequisite; the endpoint is additive and won't conflict.
+- **Shared mux coupling** → Changes to the health mux affect `/version`. Mitigation: both are simple operational endpoints with no middleware; coupling risk is low.
+- **Version defaults to `unknown`** → If built without ldflags (e.g., `go run`), `commit` and `build_time` show `"unknown"`. Mitigation: acceptable for development; CI always injects real values.

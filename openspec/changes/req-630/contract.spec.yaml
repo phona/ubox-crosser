@@ -1,8 +1,16 @@
-openapi: "3.0.3"
+openapi: "3.1.0"
 info:
   title: ubox-crosser Version API
   version: "0.1.0"
-  description: Build metadata endpoint for the ubox-crosser proxy server.
+  description: |
+    Build metadata endpoint for the ubox-crosser proxy server.
+    Locked contract for REQ-630. Any change to path / method / status / header /
+    body field names breaks the contract and requires a new REQ.
+
+servers:
+  - url: http://localhost:8080
+    description: |
+      Default suggested HTTP listener (configurable via `--http-addr` CLI flag).
 
 paths:
   /version:
@@ -13,10 +21,77 @@ paths:
       responses:
         "200":
           description: Build metadata
+          headers:
+            Content-Type:
+              schema:
+                type: string
+                enum: ["application/json"]
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/VersionResponse"
+              example:
+                version: "0.1.0"
+                commit: "abc1234"
+                build_time: "2024-01-15T10:30:00Z"
+    post:
+      operationId: postVersionNotAllowed
+      summary: Method not allowed
+      responses:
+        "405":
+          description: Only GET is allowed.
+          headers:
+            Allow:
+              schema:
+                type: string
+                enum: ["GET"]
+    put:
+      operationId: putVersionNotAllowed
+      summary: Method not allowed
+      responses:
+        "405":
+          description: Only GET is allowed.
+          headers:
+            Allow:
+              schema:
+                type: string
+                enum: ["GET"]
+    delete:
+      operationId: deleteVersionNotAllowed
+      summary: Method not allowed
+      responses:
+        "405":
+          description: Only GET is allowed.
+          headers:
+            Allow:
+              schema:
+                type: string
+                enum: ["GET"]
+    patch:
+      operationId: patchVersionNotAllowed
+      summary: Method not allowed
+      responses:
+        "405":
+          description: Only GET is allowed.
+          headers:
+            Allow:
+              schema:
+                type: string
+                enum: ["GET"]
+
+  /{path}:
+    get:
+      operationId: catchAllNotFound
+      summary: Unknown path
+      parameters:
+        - name: path
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "404":
+          description: Path not found. Only `/version` is served.
 
 components:
   schemas:

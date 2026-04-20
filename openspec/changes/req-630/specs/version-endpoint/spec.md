@@ -29,16 +29,41 @@ The `GET /version` endpoint SHALL be accessible without any authentication crede
 - **THEN** the server SHALL respond with HTTP 200 and the version JSON body
 
 ### Requirement: Version endpoint rejects non-GET methods
-The `GET /version` endpoint SHALL only accept the GET HTTP method.
+The `/version` path SHALL only accept the GET HTTP method. Non-GET requests SHALL return HTTP 405 Method Not Allowed with an `Allow: GET` response header.
 
 #### Scenario: FEATURE-S6 POST to version endpoint is rejected
 - **WHEN** a client sends `POST /version`
-- **THEN** the server SHALL respond with HTTP 405 Method Not Allowed
+- **THEN** the server SHALL respond with HTTP 405
+- **AND** the response header `Allow` SHALL equal `GET`
+
+#### Scenario: FEATURE-S6b PUT to version endpoint is rejected
+- **WHEN** a client sends `PUT /version`
+- **THEN** the server SHALL respond with HTTP 405
+- **AND** the response header `Allow` SHALL equal `GET`
+
+---
+
+### Requirement: Unknown paths return 404
+The HTTP listener SHALL return HTTP 404 Not Found for all paths other than `/version`.
+
+#### Scenario: FEATURE-S8 Request to root path returns 404
+- **WHEN** a client sends `GET /`
+- **THEN** the server SHALL respond with HTTP 404
+
+#### Scenario: FEATURE-S9 Request to unknown path returns 404
+- **WHEN** a client sends `GET /metrics`
+- **THEN** the server SHALL respond with HTTP 404
+
+#### Scenario: FEATURE-S10 Trailing slash on /version/ returns 404
+- **WHEN** a client sends `GET /version/`
+- **THEN** the server SHALL respond with HTTP 404
+
+---
 
 ### Requirement: Default values when ldflags not provided
 When the binary is built without ldflags injection, the version fields SHALL use sensible defaults.
 
-#### Scenario: FEATURE-S7 Development build defaults
+#### Scenario: FEATURE-S11 Development build defaults
 - **WHEN** the binary is built with `go build` (no ldflags)
 - **AND** a client sends `GET /version`
 - **THEN** `version` SHALL be `"0.1.0"`

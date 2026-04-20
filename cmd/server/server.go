@@ -15,6 +15,7 @@ import (
 	"github.com/phona/ubox-crosser/server"
 	"github.com/phona/ubox-crosser/utils/conf"
 	"github.com/phona/ubox-crosser/version"
+	"github.com/phona/ubox-crosser/whoami"
 )
 
 func main() {
@@ -51,6 +52,7 @@ func main() {
 			mux := http.NewServeMux()
 			mux.HandleFunc("GET /ping", ping.Handler)
 			mux.HandleFunc("GET /version", version.Handler)
+			mux.HandleFunc("GET /whoami", whoami.Handler)
 			go func() {
 				logrus.Infof("Admin HTTP server listening on %s", adminAddr)
 				if err := http.ListenAndServe(adminAddr, mux); err != nil {

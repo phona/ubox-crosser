@@ -19,5 +19,7 @@
 - [x] [ACCEPT-A8] GET /healthz still returns 200 (regression check)
 
 ## Stage: implementation (owner: dev-agent)
-- [ ] TODO: 实现 whoami 包（handler.go + handler_test.go）
-- [ ] TODO: 注册路由到 admin mux（cmd/server/server.go）
+- [x] whoami/handler.go — Handler 函数：调用 os.Hostname()，失败回退 "unknown"，返回 text/plain 200
+- [x] whoami/handler_test.go — 单元测试：状态码+Content-Type、body 匹配 hostname、非空 body、POST/PUT/DELETE 返回 405
+- [x] cmd/server/server.go — 在 admin mux 注册 `GET /whoami` 路由
+- [x] go vet / go build / unit test 全部通过

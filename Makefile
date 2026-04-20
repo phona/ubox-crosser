@@ -54,7 +54,7 @@ lint:
 	export PATH="$$GOPATH_BIN:$$PATH"; \
 	if ! command -v golangci-lint >/dev/null 2>&1; then \
 		echo "golangci-lint not found, installing to $$GOPATH_BIN ..."; \
-		curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $$GOPATH_BIN v1.62.2; \
+		curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $$GOPATH_BIN v2.1.6; \
 	fi; \
 	golangci-lint run ./...
 
@@ -109,6 +109,9 @@ test-clean:
 # CI Standard Interface
 # ═══════════════════════════════════════════════════
 
+# Ensure go / golangci-lint are on PATH even in minimal CI shells
+export PATH := /usr/local/go/bin:$(shell go env GOPATH 2>/dev/null || echo "/root/go")/bin:$(PATH)
+
 .PHONY: ci-env ci-setup ci-lint ci-unit-test ci-integration-test ci-build
 
 ci-env:
@@ -117,7 +120,10 @@ ci-env:
 
 ci-setup:
 	go mod download
-	@which golangci-lint > /dev/null 2>&1 || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $$(go env GOPATH)/bin v1.62.2
+	@if ! golangci-lint version 2>/dev/null | grep -q 'v2\.'; then \
+		echo "Installing golangci-lint v2.1.6 ..."; \
+		curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $$(go env GOPATH)/bin v2.1.6; \
+	fi
 
 # Code lint (parallel go vet + golangci-lint, BASE_REV for incremental scan)
 ci-lint:

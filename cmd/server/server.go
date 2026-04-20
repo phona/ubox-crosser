@@ -3,17 +3,22 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"os"
+
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"os"
+
 	"github.com/phona/ubox-crosser/log"
 	"github.com/phona/ubox-crosser/models/config"
 	"github.com/phona/ubox-crosser/server"
 	"github.com/phona/ubox-crosser/utils/conf"
+	"github.com/phona/ubox-crosser/version"
 )
 
 func main() {
 	var cmdConfig config.ServerConfig
+	var adminAddr string
 	cmd := &cobra.Command{
 		Use: "UBox-crosser server",
 		Run: func(cmd *cobra.Command, args []string) {
@@ -41,6 +46,16 @@ func main() {
 			}
 			proxy := server.NewProxyServer(configs)
 			go proxy.Process()
+
+			mux := http.NewServeMux()
+			mux.HandleFunc("GET /version", version.Handler)
+			go func() {
+				logrus.Infof("Admin HTTP server listening on %s", adminAddr)
+				if err := http.ListenAndServe(adminAddr, mux); err != nil {
+					logrus.Fatalf("Admin HTTP server failed: %v", err)
+				}
+			}()
+
 			func() {
 				for {
 					logrus.Errorln(proxy.Err())
@@ -79,6 +94,7 @@ func main() {
 	cmd.Flags().StringVar(&cmdConfig.LogFile, "log-file", "", "log file path")
 	cmd.Flags().StringVar(&cmdConfig.LogLevel, "log-level", "debug", "log file path")
 	cmd.Flags().StringVar(&cmdConfig.ConfigFile, "config-file", "", "config file path")
+	cmd.Flags().StringVar(&adminAddr, "admin-addr", ":8080", "admin HTTP server address")
 	if err := cmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(0)

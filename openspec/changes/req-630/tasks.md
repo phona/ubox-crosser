@@ -22,7 +22,9 @@
 - [ ] 5.1 Create `internal/version/handler_test.go` — test HTTP 200, Content-Type, and JSON body fields (FEATURE-S1, S2, S5, S7)
 - [ ] 5.2 Add test for POST → 405 (FEATURE-S6)
 
-## 6. Contract Tests
+## Stage: Contract Test (owner: contract-test-agent)
 
-- [ ] 6.1 Add `kin-openapi` test dependency
-- [ ] 6.2 Create `internal/version/contract_test.go` — validate response against `contract.spec.yaml` schema
+- [x] [FEATURE-S1] TestVersion_S1_Returns200WithJSON — verify HTTP 200, Content-Type application/json, exactly 3 required string fields (version, commit, build_time), no extra fields
+- [x] [FEATURE-S5] TestVersion_S5_NoAuthRequired — verify unauthenticated GET /version returns 200
+- [x] [FEATURE-S6] TestVersion_S6_PostReturns405 — verify POST /version returns 405 Method Not Allowed
+- [x] [FEATURE-S7] TestVersion_S7_DefaultFieldsPresent — verify all fields present and non-empty in default build

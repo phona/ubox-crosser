@@ -17,7 +17,7 @@ func staticWhoamiHandler(hostname string) http.HandlerFunc {
 	return func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(hostname))
+		_, _ = w.Write([]byte(hostname))
 	}
 }
 

@@ -20,7 +20,7 @@ func ParseConfigFile(filePath string, config interface{}) error {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	data, err := io.ReadAll(f)
 	if err != nil {

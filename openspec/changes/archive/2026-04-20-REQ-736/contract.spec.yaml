@@ -1,0 +1,51 @@
+openapi: "3.0.3"
+info:
+  title: ubox-crosser admin API — REQ-736 additions
+  version: "0.1.0"
+  description: Contract spec for the GET /uptime endpoint introduced by REQ-736.
+
+paths:
+  /uptime:
+    get:
+      operationId: getUptime
+      summary: Return server uptime in seconds
+      responses:
+        "200":
+          description: Uptime returned successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UptimeResponse"
+              example:
+                uptime_seconds: 3600
+    post:
+      operationId: postUptimeNotAllowed
+      summary: Non-GET methods must be rejected
+      responses:
+        "405":
+          description: Method Not Allowed
+    put:
+      operationId: putUptimeNotAllowed
+      summary: Non-GET methods must be rejected
+      responses:
+        "405":
+          description: Method Not Allowed
+    delete:
+      operationId: deleteUptimeNotAllowed
+      summary: Non-GET methods must be rejected
+      responses:
+        "405":
+          description: Method Not Allowed
+
+components:
+  schemas:
+    UptimeResponse:
+      type: object
+      required:
+        - uptime_seconds
+      properties:
+        uptime_seconds:
+          type: integer
+          minimum: 0
+          description: Seconds since the service started
+      additionalProperties: false

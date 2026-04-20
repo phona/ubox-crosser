@@ -13,6 +13,5 @@ linters:
     - unused
 
 issues:
-  exclude-use-default: true
   max-issues-per-linter: 50
   max-same-issues: 3

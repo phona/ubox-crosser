@@ -1,0 +1,41 @@
+openapi: "3.1.0"
+info:
+  title: ubox-crosser Admin API
+  version: "0.1.0"
+  description: Lightweight admin HTTP API for the ubox-crosser proxy tunnel.
+paths:
+  /whoami:
+    get:
+      operationId: getWhoami
+      summary: Return current machine hostname
+      description: Returns plain-text hostname of the machine handling the request.
+      responses:
+        "200":
+          description: Hostname returned successfully
+          content:
+            text/plain:
+              schema:
+                type: string
+                minLength: 1
+                description: Machine hostname or "unknown" if os.Hostname() fails
+                example: "node-01"
+        "405":
+          description: Method not allowed (non-GET requests)
+    post:
+      operationId: postWhoamiNotAllowed
+      summary: Not allowed
+      responses:
+        "405":
+          description: Method not allowed
+    put:
+      operationId: putWhoamiNotAllowed
+      summary: Not allowed
+      responses:
+        "405":
+          description: Method not allowed
+    delete:
+      operationId: deleteWhoamiNotAllowed
+      summary: Not allowed
+      responses:
+        "405":
+          description: Method not allowed

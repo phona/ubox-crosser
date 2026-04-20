@@ -1,5 +1,12 @@
 ## Stage: contract-tests (owner: contract-test-agent)
-- [ ] TODO: 列出要覆盖的 API 契约点（GET /whoami 路径、状态码、Content-Type、响应体格式）
+- [x] [REQ-722-S1] GET /whoami returns 200 with Content-Type text/plain; charset=utf-8
+- [x] [REQ-722-S2] GET /whoami body is a non-empty hostname string
+- [x] [REQ-722-S3] os.Hostname failure returns fallback "unknown"
+- [x] [REQ-722-S4] POST /whoami returns 405 Method Not Allowed
+- [x] [REQ-722-S5] PUT /whoami returns 405 Method Not Allowed
+- [x] [REQ-722-S6] DELETE /whoami returns 405 Method Not Allowed
+- [x] contract.spec.yaml — OpenAPI 3.1 spec for /whoami endpoint
+- [x] tests/contract/whoami_test.go — contract test suite
 
 ## Stage: acceptance-tests (owner: accept-test-agent)
 - [x] [ACCEPT-A1] GET /whoami returns 200 with text/plain hostname

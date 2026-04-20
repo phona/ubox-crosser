@@ -76,10 +76,7 @@ func (c *Controller) Run() {
 }
 
 func (c *Controller) handleMessage() {
-	for {
-		if c.ctlConn.IsTerminate() {
-			break
-		}
+	for !c.ctlConn.IsTerminate() {
 
 		var respMsg message.Message
 		if content, err := c.ctlConn.ReadMsg(); err != nil {

@@ -112,14 +112,14 @@ func (p *ProxyServer) handleConnection(conn net.Conn) {
 		case message.AUTHENTICATION:
 			p.handleAuthRequest(reqMsg.ServeName, reqMsg.Password, coordinator)
 		default:
-			p.handleConnErr(coordinator, fmt.Errorf("Unknown type %d were received", reqMsg.Type), errors.UNKNOWN_CODE)
+			p.handleConnErr(coordinator, fmt.Errorf("unknown type %d were received", reqMsg.Type), errors.UNKNOWN_CODE)
 		}
 	}
 }
 
 func (p *ProxyServer) handleLoginRequest(serveName, loginPass string, coordinator *connector.Coordinator) {
 	if context, ok := p.context[serveName]; !ok {
-		p.handleConnErr(coordinator, fmt.Errorf("Unknown serve %s were received", serveName), errors.INVALID_SERVE_NAME)
+		p.handleConnErr(coordinator, fmt.Errorf("unknown serve %s were received", serveName), errors.INVALID_SERVE_NAME)
 	} else if loginPass == context.LoginPass {
 		respMsg := message.ResultMessage{Result: message.SUCCESS, Reason: errors.OK}
 		content, _ := json.Marshal(respMsg)
@@ -132,18 +132,18 @@ func (p *ProxyServer) handleLoginRequest(serveName, loginPass string, coordinato
 			controller.daemonize()
 		}
 	} else {
-		p.handleConnErr(coordinator, fmt.Errorf("Invalid password for login %s != %s", context.LoginPass, loginPass), errors.INVALID_PASSWORD)
+		p.handleConnErr(coordinator, fmt.Errorf("invalid password for login %s != %s", context.LoginPass, loginPass), errors.INVALID_PASSWORD)
 	}
 }
 
 func (p *ProxyServer) handleAuthRequest(serveName, authPass string, coordinator *connector.Coordinator) {
 	if context, ok := p.context[serveName]; !ok {
-		p.handleConnErr(coordinator, fmt.Errorf("Unknown serve %s were received", serveName), errors.INVALID_SERVE_NAME)
+		p.handleConnErr(coordinator, fmt.Errorf("unknown serve %s were received", serveName), errors.INVALID_SERVE_NAME)
 	} else if controller, ok := p.controllers[serveName]; !ok {
 		p.handleConnErr(coordinator, fmt.Errorf("controller for %s does not alive", serveName), errors.INVALID_SERVE_NAME)
 	} else {
 		if authPass != context.AuthPass {
-			p.handleConnErr(coordinator, fmt.Errorf("Invalid password for authenticate %s != %s", context.AuthPass, authPass), errors.INVALID_PASSWORD)
+			p.handleConnErr(coordinator, fmt.Errorf("invalid password for authenticate %s != %s", context.AuthPass, authPass), errors.INVALID_PASSWORD)
 		} else {
 			var simpleErrHandle = func(err error) {
 				coordinator.Close()

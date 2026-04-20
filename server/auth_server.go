@@ -46,7 +46,7 @@ func (a *AuthServer) handleConnection(src net.Conn) {
 	dst, err := a.getConn()
 	if err != nil {
 		log.Error(err)
-		src.Close()
+		_ = src.Close()
 		return
 	}
 	go drillingTunnel(src, dst)
@@ -78,20 +78,20 @@ func (a *AuthServer) getConn() (net.Conn, error) {
 		}
 
 		if err := coordinator.SendMsg(string(buf)); err != nil {
-			return errFunc(fmt.Errorf("Error sending message: %s", err))
+			return errFunc(fmt.Errorf("error sending message: %s", err))
 		} else if content, err := coordinator.ReadMsg(); err != nil {
-			return errFunc(fmt.Errorf("Error reading message: %s", err))
+			return errFunc(fmt.Errorf("error reading message: %s", err))
 		} else if err := json.Unmarshal([]byte(content), &respMsg); err != nil {
-			return errFunc(fmt.Errorf("Error unmarshal data %s: %s", content, err))
+			return errFunc(fmt.Errorf("error unmarshal data %s: %s", content, err))
 		}
 
 		switch respMsg.Result {
 		case message.SUCCESS:
 			return conn, nil
 		case message.FAILED:
-			return errFunc(fmt.Errorf("Login failure: %s", respMsg.Reason))
+			return errFunc(fmt.Errorf("login failure: %s", respMsg.Reason))
 		default:
-			return errFunc(fmt.Errorf("Invalid status code %d", respMsg.Result))
+			return errFunc(fmt.Errorf("invalid status code %d", respMsg.Result))
 		}
 	}
 }

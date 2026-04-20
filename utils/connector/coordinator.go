@@ -52,5 +52,5 @@ func (c *Coordinator) IsTerminate() bool {
 
 func (c *Coordinator) Close() {
 	c.closed = true
-	c.Conn.Close()
+	_ = c.Conn.Close()
 }

@@ -79,9 +79,73 @@ func TestVersion_S6_PostReturns405(t *testing.T) {
 	if resp.StatusCode != http.StatusMethodNotAllowed {
 		t.Errorf("POST status = %d, want %d", resp.StatusCode, http.StatusMethodNotAllowed)
 	}
+
+	allow := resp.Header.Get("Allow")
+	if allow != "GET" {
+		t.Errorf("Allow header = %q, want %q", allow, "GET")
+	}
 }
 
-func TestVersion_S7_DefaultFieldsPresent(t *testing.T) {
+func TestVersion_S6b_PutReturns405(t *testing.T) {
+	req, _ := http.NewRequest(http.MethodPut, baseURL(t)+"/version", nil)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("request failed: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusMethodNotAllowed {
+		t.Errorf("PUT status = %d, want %d", resp.StatusCode, http.StatusMethodNotAllowed)
+	}
+
+	allow := resp.Header.Get("Allow")
+	if allow != "GET" {
+		t.Errorf("Allow header = %q, want %q", allow, "GET")
+	}
+}
+
+func TestVersion_S8_RootPathReturns404(t *testing.T) {
+	resp, err := http.Get(baseURL(t) + "/")
+	if err != nil {
+		t.Fatalf("request failed: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusNotFound {
+		t.Errorf("GET / status = %d, want %d", resp.StatusCode, http.StatusNotFound)
+	}
+}
+
+func TestVersion_S9_UnknownPathReturns404(t *testing.T) {
+	resp, err := http.Get(baseURL(t) + "/metrics")
+	if err != nil {
+		t.Fatalf("request failed: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusNotFound {
+		t.Errorf("GET /metrics status = %d, want %d", resp.StatusCode, http.StatusNotFound)
+	}
+}
+
+func TestVersion_S10_TrailingSlashReturns404(t *testing.T) {
+	client := &http.Client{
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
+	resp, err := client.Get(baseURL(t) + "/version/")
+	if err != nil {
+		t.Fatalf("request failed: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusNotFound {
+		t.Errorf("GET /version/ status = %d, want %d", resp.StatusCode, http.StatusNotFound)
+	}
+}
+
+func TestVersion_S11_DefaultFieldsPresent(t *testing.T) {
 	resp, err := http.Get(baseURL(t) + "/version")
 	if err != nil {
 		t.Fatalf("request failed: %v", err)

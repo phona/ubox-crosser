@@ -9,7 +9,7 @@ import (
 var customLeackyBuf = ss.NewLeakyBuf(2048, 4096)
 
 func pipeThenClose(src, dst net.Conn) {
-	defer dst.Close()
+	defer func() { _ = dst.Close() }()
 	buf := customLeackyBuf.Get()
 	defer customLeackyBuf.Put(buf)
 	for {

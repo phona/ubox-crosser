@@ -121,9 +121,9 @@ ci-setup:
 
 # Code lint (parallel go vet + golangci-lint, BASE_REV for incremental scan)
 ci-lint:
-	@export PATH="$$(go env GOPATH)/bin:$$PATH"; \
+	@export PATH="/usr/local/go/bin:$$(go env GOPATH 2>/dev/null || echo $$HOME/go)/bin:$$PATH"; \
 	golangci-lint version 2>/dev/null | grep -q ' 2\.' || \
-		curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $$(go env GOPATH)/bin v2.1.6; \
+		curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $$(go env GOPATH 2>/dev/null || echo $$HOME/go)/bin v2.1.6; \
 	golangci-lint run $${BASE_REV:+--new-from-rev=$$BASE_REV}
 
 ci-unit-test:

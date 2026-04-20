@@ -1,0 +1,67 @@
+---
+# Contract Spec for REQ-559: Version Constants in internal/config
+# This defines the public API contract for the internal/config package.
+
+package: github.com/phona/ubox-crosser/internal/config
+language: go
+
+exports:
+  constants:
+    - name: Version
+      type: string
+      description: Hardcoded semver version string, manually updated on release
+      constraints:
+        - Must be valid semver format (e.g. "0.1.0")
+        - Must not be empty
+
+  variables:
+    - name: GitCommit
+      type: string
+      description: Git short commit hash, injected via -ldflags at build time
+      constraints:
+        - When set, must be 7-40 character hex string
+        - Zero value is empty string (no ldflags)
+
+    - name: BuildTime
+      type: string
+      description: UTC build timestamp, injected via -ldflags at build time
+      constraints:
+        - When set, must be ISO 8601 format (YYYY-MM-DDTHH:MM:SSZ)
+        - Zero value is empty string (no ldflags)
+
+  functions:
+    - name: FullVersion
+      signature: "func FullVersion() string"
+      description: Returns complete version string with build metadata
+      returns:
+        type: string
+        format: "{Version} (commit: {GitCommit|unknown}, built: {BuildTime|unknown})"
+      behavior:
+        - when: GitCommit and BuildTime are empty (no ldflags)
+          returns: "{Version} (commit: unknown, built: unknown)"
+        - when: GitCommit and BuildTime are set
+          returns: "{Version} (commit: {GitCommit}, built: {BuildTime})"
+        - always: return value starts with Version constant
+        - always: return value contains "commit:" substring
+        - always: return value contains "built:" substring
+
+test_contract:
+  file: internal/config/version_contract_test.go
+  locked: true
+  cases:
+    - name: TestVersionConstantNotEmpty
+      validates: Version constant is non-empty
+    - name: TestVersionConstantSemver
+      validates: Version matches semver regex
+    - name: TestFullVersionContainsVersion
+      validates: FullVersion() output starts with Version constant
+    - name: TestFullVersionFormat
+      validates: FullVersion() contains "commit:" and "built:" substrings
+    - name: TestFullVersionWithoutLdflags
+      validates: When GitCommit/BuildTime empty, FullVersion shows "unknown"
+    - name: TestFullVersionWithLdflags
+      validates: When GitCommit/BuildTime set, FullVersion shows their values
+    - name: TestGitCommitDefaultEmpty
+      validates: GitCommit zero value is empty string
+    - name: TestBuildTimeDefaultEmpty
+      validates: BuildTime zero value is empty string

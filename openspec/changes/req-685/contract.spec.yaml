@@ -1,0 +1,49 @@
+openapi: "3.1.0"
+info:
+  title: ubox-crosser Admin API
+  version: "0.1.0"
+  description: Lightweight admin HTTP API for the ubox-crosser proxy tunnel.
+paths:
+  /healthz:
+    get:
+      operationId: getHealthz
+      summary: Liveness health check
+      description: Returns a static liveness response indicating the admin server is running.
+      responses:
+        "200":
+          description: Server is alive
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+        "405":
+          description: Method not allowed (non-GET requests)
+    post:
+      operationId: postHealthzNotAllowed
+      summary: Not allowed
+      responses:
+        "405":
+          description: Method not allowed
+    put:
+      operationId: putHealthzNotAllowed
+      summary: Not allowed
+      responses:
+        "405":
+          description: Method not allowed
+    delete:
+      operationId: deleteHealthzNotAllowed
+      summary: Not allowed
+      responses:
+        "405":
+          description: Method not allowed
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          description: Liveness status. Always "ok" when the server is running.
+          example: "ok"

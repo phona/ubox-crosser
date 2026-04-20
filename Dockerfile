@@ -12,8 +12,13 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
+ARG GIT_COMMIT=unknown
+ARG BUILD_TIME=unknown
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
-    go build -ldflags="-s -w" -o /app/crosser ./cmd/${BINARY}
+    go build -ldflags="-s -w \
+      -X github.com/phona/ubox-crosser/version.Commit=${GIT_COMMIT} \
+      -X github.com/phona/ubox-crosser/version.BuildTime=${BUILD_TIME}" \
+    -o /app/crosser ./cmd/${BINARY}
 
 # --- Runtime stage ---
 FROM ubuntu:22.04

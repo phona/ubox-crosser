@@ -1,0 +1,87 @@
+openapi: "3.0.3"
+info:
+  title: ubox-crosser Health Check API
+  version: "1.0.0"
+  description: Health check endpoint for the proxy server
+
+paths:
+  /healthz:
+    get:
+      summary: Health check
+      description: Returns the health status of the proxy server
+      operationId: getHealthz
+      responses:
+        "200":
+          description: Service is healthy
+          headers:
+            Content-Type:
+              schema:
+                type: string
+                enum:
+                  - "application/json"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+              example:
+                status: "ok"
+    post:
+      summary: Not allowed
+      responses:
+        "405":
+          description: Method not allowed
+          headers:
+            Allow:
+              schema:
+                type: string
+                enum:
+                  - "GET"
+    put:
+      summary: Not allowed
+      responses:
+        "405":
+          description: Method not allowed
+          headers:
+            Allow:
+              schema:
+                type: string
+                enum:
+                  - "GET"
+    delete:
+      summary: Not allowed
+      responses:
+        "405":
+          description: Method not allowed
+          headers:
+            Allow:
+              schema:
+                type: string
+                enum:
+                  - "GET"
+
+  /{path}:
+    get:
+      summary: Unknown path
+      parameters:
+        - name: path
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "404":
+          description: Not found
+
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum:
+            - "ok"
+          description: Health status, always "ok" when the service is running
+      additionalProperties: false

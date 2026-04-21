@@ -1,3 +1,4 @@
+export GOTOOLCHAIN = auto
 SOURCES := $(shell find . -name "*.go")
 MODULE := github.com/phona/ubox-crosser
 BINARIES := client server auth_server

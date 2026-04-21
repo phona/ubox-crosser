@@ -11,6 +11,7 @@ import (
 
 	"github.com/phona/ubox-crosser/log"
 	"github.com/phona/ubox-crosser/models/config"
+	"github.com/phona/ubox-crosser/health"
 	"github.com/phona/ubox-crosser/ping"
 	"github.com/phona/ubox-crosser/server"
 	"github.com/phona/ubox-crosser/utils/conf"
@@ -50,6 +51,7 @@ func main() {
 
 			mux := http.NewServeMux()
 			mux.HandleFunc("GET /ping", ping.Handler)
+			mux.HandleFunc("GET /healthz", health.Handler)
 			mux.HandleFunc("GET /version", version.Handler)
 			mux.HandleFunc("GET /buildinfo", version.Handler)
 			go func() {

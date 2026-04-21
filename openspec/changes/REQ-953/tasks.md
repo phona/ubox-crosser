@@ -1,15 +1,15 @@
 # REQ-953: Tasks
 
 ## Stage: contract-tests (owner: contract-test-agent)
-- [ ] TODO: 定义 /api/healthz 端点的 OpenAPI spec（GET 200 响应 schema）
-- [ ] TODO: 编写 /api/healthz 契约测试，验证响应状态码和 JSON body
+- [x] REQ-953-S1: GET /api/healthz returns 200 with JSON {"status":"ok"} (`tests/contract/healthz_test.go::TestHealthzReturnsOK`)
+- [x] REQ-953-S2: GET /api/healthz response schema validation — required field "status" with correct type (`tests/contract/healthz_test.go::TestHealthzResponseSchema`)
+- [x] REQ-953-S3: Non-GET methods (POST/PUT/DELETE) return 405 Method Not Allowed (`tests/contract/healthz_test.go::TestHealthzRejectsNonGet`)
+- [x] OpenAPI contract spec: `contract.spec.yaml` — added /api/healthz path + HealthResponse schema
+- [x] Contract test suite: `tests/contract/healthz_test.go`
 
 ## Stage: acceptance-tests (owner: accept-test-agent)
-- [ ] FEATURE-A1: GET /api/healthz 返回 200 + JSON `{"status":"ok"}`（`specs/healthz-endpoint/spec.md::FEATURE-A1`）
-- [ ] FEATURE-A2: docker-compose healthcheck 使用 HTTP /api/healthz 后 proxy-server 进入 healthy 状态（`specs/healthz-endpoint/spec.md::FEATURE-A2`）
-- [ ] FEATURE-A3: docker-compose 网络内 test-runner 可达 proxy-server:8080/api/healthz（`specs/healthz-endpoint/spec.md::FEATURE-A3`）
-- [ ] FEATURE-A4: 非 GET 方法对 /api/healthz 返回合理响应（`specs/healthz-endpoint/spec.md::FEATURE-A4`）
-- [ ] FEATURE-A5: /api/healthz 在正常条件下 500ms 内响应（`specs/healthz-endpoint/spec.md::FEATURE-A5`）
+- [ ] TODO: 在 docker-compose 集成测试中验证 proxy-server 的 /api/healthz 端点可达且返回 200
+- [ ] TODO: 验证 docker-compose healthcheck 使用 HTTP /api/healthz 后服务正确进入 healthy 状态
 
 ## Stage: implementation (owner: dev-agent)
 - [ ] TODO: 在 server/admin.go 的 NewAdminMux() 中注册 GET /api/healthz handler

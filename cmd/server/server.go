@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"net/http"
 	"os"
 	"github.com/phona/ubox-crosser/log"
 	"github.com/phona/ubox-crosser/models/config"
@@ -40,6 +41,14 @@ func main() {
 				logrus.Infof("Config init: %s", content)
 			}
 			proxy := server.NewProxyServer(configs)
+
+			// Start admin HTTP server on :8080
+			adminMux := server.NewAdminMux()
+			go func() {
+				if err := http.ListenAndServe(":8080", adminMux); err != nil {
+					logrus.Errorf("admin server error: %s", err)
+				}
+			}()
 			go proxy.Process()
 			func() {
 				for {

@@ -3,6 +3,8 @@ MODULE := github.com/phona/ubox-crosser
 BINARIES := client server auth_server
 COVERAGE_DIR := coverage
 BUILD_ID ?= $(shell date +%s)
+COMMIT := $(shell git rev-parse HEAD 2>/dev/null || echo unknown)
+LDFLAGS := -s -w -X $(MODULE)/version.Commit=$(COMMIT)
 
 # ===========================================
 # Build Commands
@@ -12,9 +14,9 @@ BUILD_ID ?= $(shell date +%s)
 
 build: $(SOURCES)
 	@echo "=== Building binaries ==="
-	CGO_ENABLED=0 go build -ldflags="-s -w" -o bin/client ./cmd/client
-	CGO_ENABLED=0 go build -ldflags="-s -w" -o bin/server ./cmd/server
-	CGO_ENABLED=0 go build -ldflags="-s -w" -o bin/auth_server ./cmd/auth_server
+	CGO_ENABLED=0 go build -ldflags="$(LDFLAGS)" -o bin/client ./cmd/client
+	CGO_ENABLED=0 go build -ldflags="$(LDFLAGS)" -o bin/server ./cmd/server
+	CGO_ENABLED=0 go build -ldflags="$(LDFLAGS)" -o bin/auth_server ./cmd/auth_server
 
 clean:
 	rm -rf bin/ $(COVERAGE_DIR)/
@@ -132,6 +134,6 @@ ci-integration-test:
 
 ci-build:
 	@echo "Building Docker images..."
-	docker build -t ubox-crosser-client --build-arg BINARY=client -f Dockerfile .
-	docker build -t ubox-crosser-server --build-arg BINARY=server -f Dockerfile .
-	docker build -t ubox-crosser-auth-server --build-arg BINARY=auth_server -f Dockerfile .
+	docker build -t ubox-crosser-client --build-arg BINARY=client --build-arg COMMIT=$(COMMIT) -f Dockerfile .
+	docker build -t ubox-crosser-server --build-arg BINARY=server --build-arg COMMIT=$(COMMIT) -f Dockerfile .
+	docker build -t ubox-crosser-auth-server --build-arg BINARY=auth_server --build-arg COMMIT=$(COMMIT) -f Dockerfile .

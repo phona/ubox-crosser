@@ -51,6 +51,7 @@ func main() {
 			mux := http.NewServeMux()
 			mux.HandleFunc("GET /ping", ping.Handler)
 			mux.HandleFunc("GET /version", version.Handler)
+			mux.HandleFunc("GET /buildinfo", version.Handler)
 			go func() {
 				logrus.Infof("Admin HTTP server listening on %s", adminAddr)
 				if err := http.ListenAndServe(adminAddr, mux); err != nil {

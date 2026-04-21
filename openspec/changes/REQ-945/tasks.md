@@ -4,13 +4,13 @@ title: "webhook-debug endpoint — tasks"
 ---
 
 ## Stage: contract-tests (owner: contract-test-agent)
-- [ ] TODO: POST /webhook-debug with JSON body returns 200 + application/json response containing method/path/headers/body
-- [ ] TODO: GET /webhook-debug?foo=bar returns 200 + JSON with query params
-- [ ] TODO: PUT /webhook-debug returns 200 + JSON with body content
-- [ ] TODO: DELETE /webhook-debug returns 200 + JSON with empty body field
-- [ ] TODO: response JSON schema validation (method, path, query, headers, body fields present)
-- [ ] TODO: OpenAPI contract spec: contract.spec.yaml
-- [ ] TODO: Contract test suite: tests/contract/webhook_debug_test.go
+- [x] REQ-945-S1: POST /webhook-debug with JSON body → 200 + JSON with method/path/headers/body (`tests/contract/webhook_debug_test.go::TestPostWithJSONBody`)
+- [x] REQ-945-S2: GET /webhook-debug?foo=bar&baz=qux → 200 + JSON with query params (`tests/contract/webhook_debug_test.go::TestGetWithQueryParams`)
+- [x] REQ-945-S3: PUT /webhook-debug with form body → 200 + JSON with body content (`tests/contract/webhook_debug_test.go::TestPutWithBody`)
+- [x] REQ-945-S4: DELETE /webhook-debug → 200 + JSON with empty body field (`tests/contract/webhook_debug_test.go::TestDeleteEmptyBody`)
+- [x] REQ-945-S5: Response JSON schema validation — all 5 required fields with correct types (`tests/contract/webhook_debug_test.go::TestResponseSchemaValidation`)
+- [x] OpenAPI contract spec: `contract.spec.yaml`
+- [x] Contract test suite: `tests/contract/webhook_debug_test.go`
 
 ## Stage: acceptance-tests (owner: accept-test-agent)
 - [x] REQ-945-S1: POST webhook with JSON body, verify response contains correct method + body

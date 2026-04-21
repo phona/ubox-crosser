@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
+	"github.com/phona/ubox-crosser/echo"
 	"github.com/phona/ubox-crosser/log"
 	"github.com/phona/ubox-crosser/models/config"
 	"github.com/phona/ubox-crosser/health"
@@ -50,6 +51,7 @@ func main() {
 			go proxy.Process()
 
 			mux := http.NewServeMux()
+			mux.HandleFunc("GET /echo", echo.Handler)
 			mux.HandleFunc("GET /ping", ping.Handler)
 			mux.HandleFunc("GET /healthz", health.Handler)
 			mux.HandleFunc("GET /version", version.Handler)

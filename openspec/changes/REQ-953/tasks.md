@@ -5,8 +5,11 @@
 - [ ] TODO: 编写 /api/healthz 契约测试，验证响应状态码和 JSON body
 
 ## Stage: acceptance-tests (owner: accept-test-agent)
-- [ ] TODO: 在 docker-compose 集成测试中验证 proxy-server 的 /api/healthz 端点可达且返回 200
-- [ ] TODO: 验证 docker-compose healthcheck 使用 HTTP /api/healthz 后服务正确进入 healthy 状态
+- [ ] FEATURE-A1: GET /api/healthz 返回 200 + JSON `{"status":"ok"}`（`specs/healthz-endpoint/spec.md::FEATURE-A1`）
+- [ ] FEATURE-A2: docker-compose healthcheck 使用 HTTP /api/healthz 后 proxy-server 进入 healthy 状态（`specs/healthz-endpoint/spec.md::FEATURE-A2`）
+- [ ] FEATURE-A3: docker-compose 网络内 test-runner 可达 proxy-server:8080/api/healthz（`specs/healthz-endpoint/spec.md::FEATURE-A3`）
+- [ ] FEATURE-A4: 非 GET 方法对 /api/healthz 返回合理响应（`specs/healthz-endpoint/spec.md::FEATURE-A4`）
+- [ ] FEATURE-A5: /api/healthz 在正常条件下 500ms 内响应（`specs/healthz-endpoint/spec.md::FEATURE-A5`）
 
 ## Stage: implementation (owner: dev-agent)
 - [ ] TODO: 在 server/admin.go 的 NewAdminMux() 中注册 GET /api/healthz handler

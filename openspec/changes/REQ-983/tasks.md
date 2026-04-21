@@ -1,8 +1,10 @@
 # REQ-983: Tasks
 
 ## Stage: contract-tests (owner: contract-spec-agent)
-- [ ] TODO: 定义 stamp-readme contract spec 场景（追加时间戳、幂等性、README 缺失时的行为）
-- [ ] TODO: 编写 contract 测试验证 spec 场景
+- [x] 定义 stamp-readme contract spec 场景（追加时间戳、幂等性、README 缺失时的行为）
+  - specs/stamp-readme/spec.md: REQ-983-S1, REQ-983-S2, REQ-983-S3
+- [x] 编写 contract 测试验证 spec 场景
+  - tests/contract/stamp_readme_test.go
 
 ## Stage: acceptance-tests (owner: acceptance-spec-agent) [SKIP]
 - [ ] SKIP: FEATURE-A1: make build 后 README.md 末尾出现 Built at 时间戳行 (`specs/stamp-readme/spec.md::FEATURE-A1`)

@@ -1,0 +1,54 @@
+openapi: "3.0.3"
+info:
+  title: ubox-crosser admin API
+  version: "1.2.0"
+  description: Contract specification for admin API endpoints.
+
+paths:
+  /api/version:
+    get:
+      operationId: getVersion
+      summary: Return current build version (git commit hash)
+      description: Returns JSON with the git commit hash injected at build time. If not injected, returns "unknown".
+      responses:
+        "200":
+          description: Build version info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VersionResponse"
+
+  /api/healthz:
+    get:
+      operationId: healthCheck
+      summary: Health check endpoint
+      description: Returns server health status as JSON. HTTP 200 means healthy.
+      responses:
+        "200":
+          description: Server is healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+
+components:
+  schemas:
+    VersionResponse:
+      type: object
+      required:
+        - commit
+      properties:
+        commit:
+          type: string
+          description: Git commit hash of the current build, or "unknown" if not injected
+
+    HealthResponse:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum:
+            - ok
+          description: Health status indicator

@@ -4,10 +4,10 @@ title: "version endpoint — tasks"
 ---
 
 ## Stage: contract-tests (owner: contract-spec-agent)
-- [ ] TODO: Define OpenAPI spec for GET /api/version (200 response schema, 405 for non-GET)
-- [ ] TODO: Contract test — GET /api/version returns 200 with JSON {"commit":"<string>"}
-- [ ] TODO: Contract test — POST /api/version returns 405 Method Not Allowed
-- [ ] TODO: Contract test — response Content-Type is application/json
+- [x] Define OpenAPI spec for GET /api/version (200 VersionResponse schema) in contract.spec.yaml
+- [x] Contract test — GET /api/version returns 200 with JSON {"commit":"<string>"} (REQ-969-S1)
+- [x] Contract test — POST/PUT/DELETE /api/version returns 405 Method Not Allowed (REQ-969-S3)
+- [x] Contract test — response Content-Type is application/json, schema validation (REQ-969-S2)
 
 ## Stage: acceptance-tests (owner: acceptance-spec-agent)
 - [ ] FEATURE-A1: GET /api/version 返回 200 + JSON `{"commit":"<hash>"}` (`specs/version-endpoint/spec.md::FEATURE-A1`)

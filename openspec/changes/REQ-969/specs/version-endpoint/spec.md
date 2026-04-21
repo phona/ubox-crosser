@@ -6,6 +6,38 @@ status: LOCKED
 
 ## ADDED
 
+### Scenario: REQ-969-S1 — GET /api/version returns 200 with JSON commit field
+
+```gherkin
+Given the admin HTTP server is running
+When the user sends a GET request to /api/version
+Then the response status code is 200
+  and the response Content-Type starts with "application/json"
+  and the response JSON field "commit" is a non-empty string
+```
+
+### Scenario: REQ-969-S2 — GET /api/version response schema validation
+
+```gherkin
+Given the admin HTTP server is running
+When the user sends a GET request to /api/version
+Then the response status code is 200
+  and the response JSON contains required field: commit (string)
+  and the response JSON contains no extra unexpected fields
+```
+
+### Scenario: REQ-969-S3 — Non-GET methods return 405 Method Not Allowed
+
+```gherkin
+Given the admin HTTP server is running
+When the user sends a POST request to /api/version
+Then the response status code is 405
+When the user sends a PUT request to /api/version
+Then the response status code is 405
+When the user sends a DELETE request to /api/version
+Then the response status code is 405
+```
+
 ### Scenario: FEATURE-A1 — GET /api/version returns 200 with JSON containing commit hash
 
 ```gherkin

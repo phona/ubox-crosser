@@ -10,9 +10,11 @@ title: "version endpoint — tasks"
 - [ ] TODO: Contract test — response Content-Type is application/json
 
 ## Stage: acceptance-tests (owner: acceptance-spec-agent)
-- [ ] TODO: Acceptance test — GET /api/version returns 200 with valid commit hash format
-- [ ] TODO: Acceptance test — non-GET method returns 405
-- [ ] TODO: Acceptance test — response JSON schema validation (commit field present, string type)
+- [ ] FEATURE-A1: GET /api/version 返回 200 + JSON `{"commit":"<hash>"}` (`specs/version-endpoint/spec.md::FEATURE-A1`)
+- [ ] FEATURE-A2: commit 字段为合法 40 字符 hex git hash 或 "unknown" (`specs/version-endpoint/spec.md::FEATURE-A2`)
+- [ ] FEATURE-A3: 非 GET 方法对 /api/version 返回 405 (`specs/version-endpoint/spec.md::FEATURE-A3`)
+- [ ] FEATURE-A4: docker-compose 网络内 test-runner 可达 proxy-server:8080/api/version (`specs/version-endpoint/spec.md::FEATURE-A4`)
+- [ ] FEATURE-A5: /api/version 在正常条件下 500ms 内响应 (`specs/version-endpoint/spec.md::FEATURE-A5`)
 
 ## Stage: implementation (owner: dev-agent)
 - [ ] TODO: version/handler.go — var Commit + Handler function (GET-only, return JSON with commit)

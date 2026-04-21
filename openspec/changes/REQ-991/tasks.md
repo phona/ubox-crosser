@@ -10,4 +10,4 @@ title: "README 构建时间戳 — tasks"
 - [x] SKIP — 纯文档变更，无验收场景 (SKIP_ACCEPT)
 
 ## Stage: implementation (owner: dev-agent)
-- [ ] README.md — 追加构建时间戳行 `Built: <ISO-8601 timestamp>`
+- [x] README.md — 追加构建时间戳行 `Built: <ISO-8601 timestamp>`

@@ -8,3 +8,5 @@ It supports encrypt & decrypt data between proxy server and internal server, tho
 ## Architecture
 
 ![architecture](/pic/architecture.png)
+
+Built: 2026-04-21T15:18:23Z

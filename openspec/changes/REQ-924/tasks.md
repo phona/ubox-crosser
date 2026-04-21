@@ -23,4 +23,9 @@ title: "GET /echo endpoint — tasks"
 - [x] [FEATURE-A9] 共存验证：GET /version 仍正常
 
 ## Stage: implementation (owner: dev-agent)
-- [ ] TODO: 列出要实现的模块（echo 包 handler、路由注册、单元测试）
+- [x] echo/handler.go — Handler 实现（读 msg query param，返回 text/plain 200）
+- [x] cmd/server/server.go — 注册 GET /echo 路由到 admin mux
+- [x] echo/handler_test.go — 单元测试（WithMsg、SpecialChars、EmptyMsg、NoMsgParam）
+- [x] go vet + make build 编译通过
+- [x] make ci-unit-test 全部绿色（echo coverage 100%）
+- [x] 契约测试 tests/contract/echo_test.go 全部通过

@@ -22,8 +22,8 @@ title: "GET /buildinfo endpoint — tasks"
 - [x] [FEATURE-A8] GET /healthz still returns 200 after /buildinfo added
 
 ## Stage: implementation (owner: dev-agent)
-- [ ] register `GET /buildinfo` route on admin mux in `cmd/server/server.go` reusing `version.Handler`
-- [ ] add mux-level unit test: GET /buildinfo returns 200 with correct JSON body (S1, S2)
-- [ ] add mux-level unit test: POST/PUT/DELETE /buildinfo return 405 (S3, S4, S5)
-- [ ] add mux-level unit test: GET /buildinfo and GET /version return identical response (S6)
-- [ ] verify `go vet`, `go build`, and unit tests pass on CI
+- [x] register `GET /buildinfo` route on admin mux in `cmd/server/server.go` reusing `version.Handler`
+- [x] add mux-level unit test: GET /buildinfo returns 200 with correct JSON body (S1, S2)
+- [x] add mux-level unit test: POST/PUT/DELETE /buildinfo return 405 (S3, S4, S5)
+- [x] add mux-level unit test: GET /buildinfo and GET /version return identical response (S6)
+- [x] verify `go vet`, `go build`, and unit tests pass on CI

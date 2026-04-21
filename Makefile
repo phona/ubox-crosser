@@ -3,6 +3,8 @@ MODULE := github.com/phona/ubox-crosser
 BINARIES := client server auth_server
 COVERAGE_DIR := coverage
 BUILD_ID ?= $(shell date +%s)
+# Auto-detect docker compose command (V2 plugin vs V1 standalone)
+DOCKER_COMPOSE := $(shell if docker compose version >/dev/null 2>&1; then echo "docker compose"; elif command -v docker-compose >/dev/null 2>&1; then echo "docker-compose"; else echo "docker compose"; fi)
 
 # ===========================================
 # Build Commands
@@ -83,12 +85,12 @@ sonar:
 test-integration:
 	@echo "=== Running Integration Tests ==="
 	@echo "=== Cleaning up any previous run ==="
-	docker compose -p crosser-test-$(BUILD_ID) -f tests/docker-compose.yml down -v --remove-orphans 2>/dev/null || true
+	$(DOCKER_COMPOSE) -p crosser-test-$(BUILD_ID) -f tests/docker-compose.yml down -v --remove-orphans 2>/dev/null || true
 	@echo "=== Starting containers ==="
 	@mkdir -p $(COVERAGE_DIR)/raw
 	@chmod -R 777 $(COVERAGE_DIR)
 	COVERAGE_HOST_DIR=$(CURDIR)/$(COVERAGE_DIR)/raw \
-		docker compose -p crosser-test-$(BUILD_ID) -f tests/docker-compose.yml up --build --exit-code-from test-runner
+		$(DOCKER_COMPOSE) -p crosser-test-$(BUILD_ID) -f tests/docker-compose.yml up --build --exit-code-from test-runner
 	@echo "=== Merging coverage data ==="
 	@if ls $(COVERAGE_DIR)/raw/cov* 1>/dev/null 2>&1; then \
 		go tool covdata textfmt -i=$(COVERAGE_DIR)/raw -o=$(COVERAGE_DIR)/integration.out; \
@@ -97,11 +99,11 @@ test-integration:
 		echo "No coverage data collected"; \
 	fi
 	@echo "=== Cleaning up test containers and volumes ==="
-	docker compose -p crosser-test-$(BUILD_ID) -f tests/docker-compose.yml down -v --remove-orphans 2>/dev/null || true
+	$(DOCKER_COMPOSE) -p crosser-test-$(BUILD_ID) -f tests/docker-compose.yml down -v --remove-orphans 2>/dev/null || true
 
 test-clean:
 	@echo "=== Cleaning up all test containers ==="
-	docker compose -p crosser-test-$(BUILD_ID) -f tests/docker-compose.yml down -v --remove-orphans 2>/dev/null || true
+	$(DOCKER_COMPOSE) -p crosser-test-$(BUILD_ID) -f tests/docker-compose.yml down -v --remove-orphans 2>/dev/null || true
 	@rm -rf $(COVERAGE_DIR)/*
 	@echo "Done."
 

@@ -15,6 +15,7 @@ build: $(SOURCES)
 	CGO_ENABLED=0 go build -ldflags="-s -w" -o bin/client ./cmd/client
 	CGO_ENABLED=0 go build -ldflags="-s -w" -o bin/server ./cmd/server
 	CGO_ENABLED=0 go build -ldflags="-s -w" -o bin/auth_server ./cmd/auth_server
+	@$(MAKE) --no-print-directory stamp-readme
 
 clean:
 	rm -rf bin/ $(COVERAGE_DIR)/
@@ -135,3 +136,15 @@ ci-build:
 	docker build -t ubox-crosser-client --build-arg BINARY=client -f Dockerfile .
 	docker build -t ubox-crosser-server --build-arg BINARY=server -f Dockerfile .
 	docker build -t ubox-crosser-auth-server --build-arg BINARY=auth_server -f Dockerfile .
+
+# ===========================================
+# README Timestamp
+# ===========================================
+
+.PHONY: stamp-readme
+
+stamp-readme:
+	@if [ -f README.md ]; then \
+		sed -i "/^Built at:/d" README.md; \
+		echo "Built at: $$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> README.md; \
+	fi

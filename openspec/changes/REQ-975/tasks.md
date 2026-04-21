@@ -14,6 +14,6 @@
 - [ ] FEATURE-A5: stamp-readme target 可独立调用 (`specs/stamp-readme/spec.md::FEATURE-A5`)
 
 ## Stage: implementation (owner: dev-agent)
-- [ ] TODO: 在 Makefile 中新增 stamp-readme target
-- [ ] TODO: 修改 build target 依赖 stamp-readme
-- [ ] TODO: 验证幂等性（多次构建不重复追加）
+- [x] 在 Makefile 末尾新增 stamp-readme target：先 sed 删除已有 Built at 行，再 echo 追加新时间戳；README.md 不存在则跳过
+- [x] 在 build target 末尾追加 @$(MAKE) stamp-readme 调用
+- [x] 验证幂等性：contract 测试 S1/S2/S3 全部通过，ci-unit-test 全绿

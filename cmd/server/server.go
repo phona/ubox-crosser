@@ -3,9 +3,12 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"os"
+
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"os"
+
 	"github.com/phona/ubox-crosser/log"
 	"github.com/phona/ubox-crosser/models/config"
 	"github.com/phona/ubox-crosser/server"
@@ -39,6 +42,16 @@ func main() {
 				logrus.Infoln("Using configuration from configure file")
 				logrus.Infof("Config init: %s", content)
 			}
+
+			adminMux := server.NewAdminMux()
+			go func() {
+				adminAddr := ":8080"
+				logrus.Infof("Admin HTTP server listening on %s", adminAddr)
+				if err := http.ListenAndServe(adminAddr, adminMux); err != nil {
+					logrus.Errorf("Admin HTTP server error: %v", err)
+				}
+			}()
+
 			proxy := server.NewProxyServer(configs)
 			go proxy.Process()
 			func() {
@@ -46,29 +59,6 @@ func main() {
 					logrus.Errorln(proxy.Err())
 				}
 			}()
-
-			//if err := (&cmdConfig).Update(fileConfig); err != nil {
-			//	conf.CmdErrHandle(cmd, err)
-			//}
-
-			//if cmdConfig.Address == "" {
-			//	conf.CmdErrHandle(cmd, "Address can't be empty")
-			//} else if cmdConfig.Method != "" && cmdConfig.Key == "" {
-			//	conf.CmdErrHandle(cmd, "Password can't be empty")
-			//}
-
-			//var cipher *shadowsocks.Cipher
-			//if cmdConfig.Method != "" {
-			//	if err := shadowsocks.CheckCipherMethod(cmdConfig.Method); err != nil {
-			//		conf.CmdErrHandle(cmd, err)
-			//	} else if cipher, err = shadowsocks.NewCipher(cmdConfig.Method, cmdConfig.Key); err != nil {
-			//		conf.CmdErrHandle(cmd, err)
-			//	}
-			//}
-
-			//proxy := server.NewProxyServer(cmdConfig.ExposerAddress, cmdConfig.ExposerPass,
-			//	cmdConfig.ControllerAddress, cmdConfig.ControllerPass, cipher)
-			//proxy.Run()
 		},
 	}
 	cmd.Flags().StringVarP(&cmdConfig.Key, "key", "k", "", "encrypt key")

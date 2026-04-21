@@ -20,6 +20,7 @@ title: "webhook-debug endpoint — tasks"
 - [x] REQ-945-S5: Response JSON schema validation (all required fields present)
 
 ## Stage: implementation (owner: dev-agent)
-- [ ] TODO: webhookdebug package (handler + RequestInfo struct)
-- [ ] TODO: route registration in cmd/server/server.go
-- [ ] TODO: unit tests for handler
+- [x] webhookdebug/handler.go: RequestInfo struct + Handler function (read method/path/query/headers/body, return JSON 200)
+- [x] server/admin.go: NewAdminMux() with /webhook-debug route registration
+- [x] cmd/server/server.go: start admin HTTP server on :8080 alongside TCP proxy
+- [x] webhookdebug/handler_test.go: 5 unit tests covering POST+JSON, GET+query, PUT+form, DELETE+empty, schema validation (100% coverage)

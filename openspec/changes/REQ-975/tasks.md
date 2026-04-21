@@ -4,7 +4,11 @@
 - [ ] TODO: 定义 stamp-readme 的契约测试（验证 README 末尾追加了 Built at 时间戳行）
 
 ## Stage: acceptance-tests (owner: acceptance-spec-agent)
-- [ ] TODO: 定义验收场景（构建后 README 末尾包含正确格式的时间戳行）
+- [ ] FEATURE-A1: make build 后 README.md 末尾出现 Built at 时间戳行 (`specs/stamp-readme/spec.md::FEATURE-A1`)
+- [ ] FEATURE-A2: 时间戳为合法的 ISO 8601 UTC 格式且与当前时间偏差不超过 60s (`specs/stamp-readme/spec.md::FEATURE-A2`)
+- [ ] FEATURE-A3: 多次构建不会重复追加时间戳行（幂等性）(`specs/stamp-readme/spec.md::FEATURE-A3`)
+- [ ] FEATURE-A4: README.md 不存在时构建仍然成功 (`specs/stamp-readme/spec.md::FEATURE-A4`)
+- [ ] FEATURE-A5: stamp-readme target 可独立调用 (`specs/stamp-readme/spec.md::FEATURE-A5`)
 
 ## Stage: implementation (owner: dev-agent)
 - [ ] TODO: 在 Makefile 中新增 stamp-readme target

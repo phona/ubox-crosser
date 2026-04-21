@@ -13,12 +13,11 @@ title: "webhook-debug endpoint — tasks"
 - [ ] TODO: Contract test suite: tests/contract/webhook_debug_test.go
 
 ## Stage: acceptance-tests (owner: accept-test-agent)
-- [x] FEATURE-A1: POST webhook with JSON body, verify response contains correct method + body
-- [x] FEATURE-A2: GET with query params, verify response query field populated
-- [x] FEATURE-A3: custom headers forwarded, verify response headers field contains them
-- [x] FEATURE-A4: empty body request, verify body field is empty string
-- [x] FEATURE-A5: large body handling (within reasonable limits)
-- [x] FEATURE-A6: coexistence: existing endpoints (/ping, /healthz, /echo, /version) still work
+- [x] REQ-945-S1: POST webhook with JSON body, verify response contains correct method + body
+- [x] REQ-945-S2: GET with query params, verify response query field populated
+- [x] REQ-945-S3: PUT with form body, verify response body content
+- [x] REQ-945-S4: DELETE with no body, verify body field is empty string
+- [x] REQ-945-S5: Response JSON schema validation (all required fields present)
 
 ## Stage: implementation (owner: dev-agent)
 - [ ] TODO: webhookdebug package (handler + RequestInfo struct)

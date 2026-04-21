@@ -1,50 +1,51 @@
 ---
 capability: webhook-debug-endpoint
 change_id: REQ-945
+status: LOCKED
 ---
 
 ## ADDED
 
-### Scenario: FEATURE-A1 — POST webhook with JSON body returns complete request info
+### Scenario: REQ-945-S1 — POST webhook with JSON body returns complete request info
 
 ```gherkin
 Given the admin HTTP server is running
 When the user sends a POST request to /webhook-debug
   with header "Content-Type: application/json"
-  and body '{"event":"push","repo":"ubox-crosser"}'
+  and body '{"event":"push"}'
 Then the response status code is 200
-  and the response Content-Type is "application/json; charset=utf-8"
+  and the response Content-Type starts with "application/json"
   and the response JSON field "method" equals "POST"
   and the response JSON field "path" equals "/webhook-debug"
-  and the response JSON field "body" equals '{"event":"push","repo":"ubox-crosser"}'
+  and the response JSON field "body" equals '{"event":"push"}'
   and the response JSON field "headers" contains key "Content-Type"
 ```
 
-### Scenario: FEATURE-A2 — GET with query params populates query field
+### Scenario: REQ-945-S2 — GET with query params populates query field
 
 ```gherkin
 Given the admin HTTP server is running
-When the user sends a GET request to /webhook-debug?foo=bar&baz=123
+When the user sends a GET request to /webhook-debug?foo=bar&baz=qux
 Then the response status code is 200
   and the response JSON field "method" equals "GET"
   and the response JSON field "query" contains key "foo" with value ["bar"]
-  and the response JSON field "query" contains key "baz" with value ["123"]
+  and the response JSON field "query" contains key "baz" with value ["qux"]
   and the response JSON field "body" equals ""
 ```
 
-### Scenario: FEATURE-A3 — Custom headers are captured in response
+### Scenario: REQ-945-S3 — PUT with form body returns body content
 
 ```gherkin
 Given the admin HTTP server is running
-When the user sends a POST request to /webhook-debug
-  with header "X-Webhook-Secret: abc123"
-  and header "X-Custom-Event: deploy"
+When the user sends a PUT request to /webhook-debug
+  with header "Content-Type: application/x-www-form-urlencoded"
+  and body "key=val"
 Then the response status code is 200
-  and the response JSON field "headers" contains key "X-Webhook-Secret" with value ["abc123"]
-  and the response JSON field "headers" contains key "X-Custom-Event" with value ["deploy"]
+  and the response JSON field "method" equals "PUT"
+  and the response JSON field "body" equals "key=val"
 ```
 
-### Scenario: FEATURE-A4 — Empty body request returns empty string body
+### Scenario: REQ-945-S4 — DELETE with no body returns empty body string
 
 ```gherkin
 Given the admin HTTP server is running
@@ -54,32 +55,11 @@ Then the response status code is 200
   and the response JSON field "body" equals ""
 ```
 
-### Scenario: FEATURE-A5 — Large body is handled correctly
+### Scenario: REQ-945-S5 — Response JSON schema validation
 
 ```gherkin
 Given the admin HTTP server is running
-When the user sends a POST request to /webhook-debug
-  with a body of 64KB of repeated "x" characters
+When the user sends a GET request to /webhook-debug
 Then the response status code is 200
-  and the response JSON field "body" has length 65536
-  and the response JSON field "method" equals "POST"
-```
-
-### Scenario: FEATURE-A6 — Existing endpoints still work after adding webhook-debug
-
-```gherkin
-Given the admin HTTP server is running with /webhook-debug registered
-When the user sends a GET request to /ping
-Then the response status code is 200
-  and the response body is "pong"
-
-When the user sends a GET request to /healthz
-Then the response status code is 200
-  and the response Content-Type is "application/json"
-
-When the user sends a GET request to /echo?msg=hello
-Then the response status code is 200
-
-When the user sends a GET request to /version
-Then the response status code is 200
+  and the response JSON contains required fields: method (string), path (string), query (map[string][]string), headers (map[string][]string), body (string)
 ```

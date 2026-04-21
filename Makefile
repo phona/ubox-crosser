@@ -8,13 +8,20 @@ BUILD_ID ?= $(shell date +%s)
 # Build Commands
 # ===========================================
 
-.PHONY: build clean fmt vet test unit-test unit-test-coverage
+.PHONY: build clean fmt vet test unit-test unit-test-coverage stamp-readme
 
 build: $(SOURCES)
 	@echo "=== Building binaries ==="
 	CGO_ENABLED=0 go build -ldflags="-s -w" -o bin/client ./cmd/client
 	CGO_ENABLED=0 go build -ldflags="-s -w" -o bin/server ./cmd/server
 	CGO_ENABLED=0 go build -ldflags="-s -w" -o bin/auth_server ./cmd/auth_server
+	@$(MAKE) stamp-readme
+
+stamp-readme:
+	@if [ -f README.md ]; then \
+		sed -i "/^Built at: /d" README.md; \
+		echo "Built at: $$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> README.md; \
+	fi
 
 clean:
 	rm -rf bin/ $(COVERAGE_DIR)/

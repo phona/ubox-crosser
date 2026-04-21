@@ -14,6 +14,6 @@
 - [ ] SKIP: FEATURE-A5: stamp-readme target 可独立调用 (`specs/stamp-readme/spec.md::FEATURE-A5`)
 
 ## Stage: implementation (owner: dev-agent)
-- [ ] TODO: 在 Makefile 新增 stamp-readme target（sed 删旧行 + echo 追加新时间戳，README 不存在则跳过）
-- [ ] TODO: 在 build target 末尾追加 stamp-readme 调用
-- [ ] TODO: 验证 contract 测试全部通过
+- [x] 在 Makefile 新增 stamp-readme target（sed 删旧 Built at 行 + echo 追加新 ISO-8601 UTC 时间戳，README 不存在则 skip）
+- [x] 在 build target 末尾追加 @$(MAKE) stamp-readme 调用
+- [x] 验证 go vet、go build、contract 测试全部通过

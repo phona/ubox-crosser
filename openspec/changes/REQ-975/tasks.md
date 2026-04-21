@@ -1,7 +1,10 @@
 # REQ-975: Tasks
 
 ## Stage: contract-tests (owner: contract-spec-agent)
-- [ ] TODO: 定义 stamp-readme 的契约测试（验证 README 末尾追加了 Built at 时间戳行）
+- [x] Contract spec scenarios REQ-975-S1..S3 in specs/stamp-readme/spec.md
+- [x] Contract test — make stamp-readme appends valid ISO 8601 UTC timestamp to README.md last line (REQ-975-S1)
+- [x] Contract test — running stamp-readme twice yields exactly one Built at line, idempotent (REQ-975-S2)
+- [x] Contract test — stamp-readme exits 0 gracefully when README.md absent (REQ-975-S3)
 
 ## Stage: acceptance-tests (owner: acceptance-spec-agent)
 - [ ] FEATURE-A1: make build 后 README.md 末尾出现 Built at 时间戳行 (`specs/stamp-readme/spec.md::FEATURE-A1`)

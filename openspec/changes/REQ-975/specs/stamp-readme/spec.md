@@ -6,6 +6,35 @@ status: LOCKED
 
 ## ADDED
 
+### Scenario: REQ-975-S1 — make stamp-readme 后 README.md 末尾出现合法 Built at 时间戳行
+
+```gherkin
+Given the project source tree is checked out
+  and README.md exists in the project root
+When the user runs make stamp-readme
+Then README.md ends with a line matching pattern "^Built at: \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$"
+  and the timestamp is a valid ISO 8601 UTC value
+```
+
+### Scenario: REQ-975-S2 — 多次执行 stamp-readme 只保留一行时间戳（幂等性）
+
+```gherkin
+Given the project source tree is checked out
+  and README.md exists in the project root
+When the user runs make stamp-readme twice consecutively
+Then README.md contains exactly one line starting with "Built at:"
+```
+
+### Scenario: REQ-975-S3 — README.md 不存在时 stamp-readme 优雅退出
+
+```gherkin
+Given the project source tree is checked out
+  and README.md does not exist in the project root
+When the user runs make stamp-readme
+Then the command exits with code 0
+  and no README.md file is created
+```
+
 ### Scenario: FEATURE-A1 — make build 后 README.md 末尾出现 Built at 时间戳行
 
 ```gherkin

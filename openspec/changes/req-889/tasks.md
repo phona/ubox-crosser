@@ -12,8 +12,14 @@ title: "GET /buildinfo endpoint — tasks"
 - [x] [REQ-889-S6] specify /buildinfo response identical to /version
 
 ## Stage: acceptance-tests (owner: accept-test-agent)
-- [ ] TODO: verify GET /buildinfo returns 200 with correct JSON schema
-- [ ] TODO: verify non-GET methods return 405
+- [x] [FEATURE-A1] GET /buildinfo returns 200 with JSON containing version, commit, build_time
+- [x] [FEATURE-A2] Build info fields are meaningful (non-empty, correct format)
+- [x] [FEATURE-A3] GET /buildinfo and GET /version return identical responses
+- [x] [FEATURE-A4] POST /buildinfo returns 405
+- [x] [FEATURE-A5] PUT /buildinfo returns 405
+- [x] [FEATURE-A6] DELETE /buildinfo returns 405
+- [x] [FEATURE-A7] GET /version still returns 200 after /buildinfo added
+- [x] [FEATURE-A8] GET /healthz still returns 200 after /buildinfo added
 
 ## Stage: implementation (owner: dev-agent)
 - [ ] TODO: register GET /buildinfo route in cmd/server/server.go

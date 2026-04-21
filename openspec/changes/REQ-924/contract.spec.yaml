@@ -1,0 +1,56 @@
+openapi: "3.0.3"
+info:
+  title: ubox-crosser Admin API — Echo Endpoint
+  version: REQ-924
+  description: Contract for GET /echo added by REQ-924
+
+paths:
+  /echo:
+    get:
+      operationId: echo
+      summary: Echo back the msg query parameter as plain text
+      parameters:
+        - name: msg
+          in: query
+          required: false
+          schema:
+            type: string
+          description: The message to echo back. If absent or empty, response body is empty.
+      responses:
+        "200":
+          description: Success — msg value echoed verbatim
+          headers:
+            Content-Type:
+              schema:
+                type: string
+                enum:
+                  - "text/plain; charset=utf-8"
+          content:
+            text/plain:
+              schema:
+                type: string
+              examples:
+                with-msg:
+                  value: "hello"
+                empty-msg:
+                  value: ""
+        "405":
+          description: Method Not Allowed — only GET is accepted
+    post:
+      operationId: echoPostNotAllowed
+      summary: POST is not allowed
+      responses:
+        "405":
+          description: Method Not Allowed
+    put:
+      operationId: echoPutNotAllowed
+      summary: PUT is not allowed
+      responses:
+        "405":
+          description: Method Not Allowed
+    delete:
+      operationId: echoDeleteNotAllowed
+      summary: DELETE is not allowed
+      responses:
+        "405":
+          description: Method Not Allowed

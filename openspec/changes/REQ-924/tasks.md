@@ -4,7 +4,12 @@ title: "GET /echo endpoint — tasks"
 ---
 
 ## Stage: contract-tests (owner: contract-test-agent)
-- [ ] TODO: 列出要覆盖的 API 契约点（路径、方法、query 参数、响应格式、状态码、错误方法处理）
+- [x] [REQ-924-S1] GET /echo?msg=hello returns 200 with body "hello" and Content-Type text/plain
+- [x] [REQ-924-S2] GET /echo?msg= returns 200 with empty body
+- [x] [REQ-924-S3] GET /echo (no msg param) returns 200 with empty body
+- [x] [REQ-924-S4] POST/PUT/DELETE /echo returns 405 Method Not Allowed
+- [x] OpenAPI contract spec: contract.spec.yaml
+- [x] Contract test suite: tests/contract/echo_test.go
 
 ## Stage: acceptance-tests (owner: accept-test-agent)
 - [x] [FEATURE-A1] 正常回显：GET /echo?msg=hello 返回 200 + text/plain body "hello"

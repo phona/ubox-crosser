@@ -1,0 +1,49 @@
+# ═══════════════════════════════════════════════════
+# ubox-crosser Contract Tests - Management Server
+# ═══════════════════════════════════════════════════
+#
+# Purpose: Test management server endpoints (/version, /health, /healthz)
+# This is separate from the integration tunnel tests
+#
+# Usage:
+#   docker compose -f tests/docker-compose.contract.yml up --build --exit-code-from test-runner
+
+services:
+  # Proxy server with management endpoints
+  server:
+    build:
+      context: ..
+      dockerfile: tests/Dockerfile.test
+    command: ["server", "--config-file", "/etc/crosser/server.json"]
+    ports:
+      - "7000:7000"
+      - "8888:8888"  # Management server port
+    volumes:
+      - ./configs/server.json:/etc/crosser/server.json:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8888/health"]
+      interval: 1s
+      timeout: 2s
+      retries: 10
+      start_period: 1s
+
+  # Contract test runner - executes management endpoint tests
+  test-runner:
+    build:
+      context: ..
+      dockerfile: tests/Dockerfile.test
+    command: >
+      sh -c "
+        echo 'Waiting for management server to be ready...' &&
+        sleep 2 &&
+        echo 'Running contract tests...' &&
+        cd /src &&
+        go test -v -count=1 -tags integration -timeout=60s ./tests/contract/...
+      "
+    environment:
+      - MANAGEMENT_SERVER_ADDR=server:8888
+    depends_on:
+      server:
+        condition: service_healthy
+    networks:
+      - default

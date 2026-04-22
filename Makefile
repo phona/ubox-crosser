@@ -12,9 +12,10 @@ BUILD_ID ?= $(shell date +%s)
 
 build: $(SOURCES)
 	@echo "=== Building binaries ==="
-	CGO_ENABLED=0 go build -ldflags="-s -w" -o bin/client ./cmd/client
-	CGO_ENABLED=0 go build -ldflags="-s -w" -o bin/server ./cmd/server
-	CGO_ENABLED=0 go build -ldflags="-s -w" -o bin/auth_server ./cmd/auth_server
+	$(eval GIT_SHA=$(shell git rev-parse HEAD || echo "unknown"))
+	CGO_ENABLED=0 go build -ldflags="-s -w -X main.GitSHA=$(GIT_SHA)" -o bin/client ./cmd/client
+	CGO_ENABLED=0 go build -ldflags="-s -w -X github.com/phona/ubox-crosser/cmd/server.GitSHA=$(GIT_SHA)" -o bin/server ./cmd/server
+	CGO_ENABLED=0 go build -ldflags="-s -w -X main.GitSHA=$(GIT_SHA)" -o bin/auth_server ./cmd/auth_server
 
 clean:
 	rm -rf bin/ $(COVERAGE_DIR)/

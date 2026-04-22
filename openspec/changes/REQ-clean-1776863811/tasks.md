@@ -1,12 +1,15 @@
 # Tasks: REQ-clean-1776863811 /version 端点实现
 
 ## Stage: contract-tests (owner: contract-spec-agent)
-- [ ] 定义 /version 端点的 API 契约规范
-- [ ] 验证端点返回 HTTP 200 状态码
-- [ ] 验证响应包含 `sha` 字段
-- [ ] 验证响应格式为有效 JSON
-- [ ] 验证端点支持 GET 方法
-- [ ] 验证端点不接受其他 HTTP 方法
+- [x] 定义 /version 端点的 API 契约规范 (openspec/changes/REQ-clean-1776863811/specs/version-endpoint/contract.md)
+- [x] 验证端点返回 HTTP 200 状态码 (C1 scenario)
+- [x] 验证响应包含 `sha` 和 `commit` 字段 (C2-C3 scenarios)
+- [x] 验证响应格式为有效 JSON (C1 scenario)
+- [x] 验证端点支持 GET 方法 (C4 scenario)
+- [x] 验证端点不接受其他 HTTP 方法 (POST/DELETE/PUT) (C4 scenario)
+- [x] 验证 SHA 格式为 40 字符十六进制或 "unknown" (C3 scenario)
+- [x] 验证查询参数被忽略 (C5 scenario)
+- [x] 实现契约测试 (tests/contract/version_endpoint_test.go)
 
 ## Stage: acceptance-tests (owner: acceptance-spec-agent)
 - [x] 定义 acceptance spec 中的验收场景（FEATURE-A1 到 A5）

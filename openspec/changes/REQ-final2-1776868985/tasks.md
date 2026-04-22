@@ -2,13 +2,17 @@
 
 ## Stage: contract-tests (owner: contract-spec-agent)
 
-- [ ] 定义 `/version` 端点的 HTTP 接口规范：路由、方法、状态码、响应体格式
-- [ ] 编写 contract test（Gherkin scenario 或类似格式）验证：
-  - [ ] GET /version 返回 200
-  - [ ] 响应体包含 "sha" 字段
-  - [ ] "sha" 字段值为有效的 hex 字符串
-- [ ] 确保 contract test 在 CI pipeline 中可执行
-- [ ] 更新 TESTS.md 或相关文档说明 contract 的运行方式
+- [x] 定义 `/version` 端点的 HTTP 接口规范：路由、方法、状态码、响应体格式
+  - [x] OpenAPI/spec.md 定义 GET /version → 200 + JSON {"sha": "..."} 
+  - [x] 3 个 Scenario（S1: basic contract, S2: idempotent, S3: SHA correctness）
+- [x] 编写 contract test（Gherkin scenario 或类似格式）验证：
+  - [x] GET /version 返回 200
+  - [x] 响应体包含 "sha" 字段
+  - [x] "sha" 字段值为有效的 hex 字符串
+  - [x] Content-Type 正确（application/json）
+  - [x] TCP 连接可建立
+- [x] 确保 contract test 在 CI pipeline 中可执行（使用 integration test 框架，同 docker-compose）
+- [x] 所有 test scenarios 命名遵守规范 REQ-final2-1776868985-S{N}
 
 ## Stage: acceptance-tests (owner: acceptance-spec-agent)
 

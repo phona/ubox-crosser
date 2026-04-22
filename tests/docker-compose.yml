@@ -61,7 +61,7 @@ services:
       proxy-server:
         condition: service_healthy
 
-  # Test runner - executes integration tests
+  # Test runner - executes contract and integration tests
   test-runner:
     build:
       context: ..
@@ -70,9 +70,9 @@ services:
       sh -c "
         echo 'Waiting for services to be ready...' &&
         sleep 5 &&
-        echo 'Running integration tests...' &&
+        echo 'Running contract and integration tests...' &&
         cd /src &&
-        go test -v -count=1 -tags integration -timeout=120s ./tests/integration/...
+        go test -v -count=1 -tags integration -timeout=120s ./tests/contract/... ./tests/integration/...
       "
     environment:
       - PROXY_SERVER_ADDR=proxy-server:7000

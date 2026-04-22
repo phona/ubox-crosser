@@ -186,7 +186,7 @@ func (p *ProxyServer) handleHTTPRequest(conn net.Conn, peek []byte) {
 }
 
 func (p *ProxyServer) isVersionRequest(request string) bool {
-	return len(request) > 13 && request[:12] == "GET /version"
+	return len(request) > 12 && request[:13] == "GET /version "
 }
 
 func (p *ProxyServer) handleLoginRequest(serveName, loginPass string, coordinator *connector.Coordinator) {

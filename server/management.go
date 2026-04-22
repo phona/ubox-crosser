@@ -15,6 +15,7 @@ type VersionInfo struct {
 	Module  string `json:"module"`
 	GoOS    string `json:"go_os"`
 	GoArch  string `json:"go_arch"`
+	GitSha  string `json:"git_sha"`
 }
 
 type HealthzResponse struct {
@@ -57,10 +58,17 @@ func (m *ManagementServer) handleVersion(w http.ResponseWriter, r *http.Request)
 		GoOS:    runtime.GOOS,
 		GoArch:  runtime.GOARCH,
 		Version: "unknown",
+		GitSha:  "unknown",
 	}
 
 	if buildInfo, ok := debug.ReadBuildInfo(); ok {
 		info.Version = buildInfo.Main.Version
+		for _, setting := range buildInfo.Settings {
+			if setting.Key == "vcs.revision" {
+				info.GitSha = setting.Value
+				break
+			}
+		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")

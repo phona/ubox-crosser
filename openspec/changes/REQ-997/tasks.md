@@ -4,9 +4,26 @@
 > 本文件由 analyze-agent 立骨架；细节 TODO 由对应 stage 的 owner agent 自行展开（章节归属见 owner 标注）。
 
 ## Stage: contract-tests (owner: contract-spec-agent)
-- [ ] TODO: 产出 `crosser-api/contract.spec.yaml` —— 覆盖 auth / services CRUD / proxy register|heartbeat|status / services config 导出 共 9 个端点
-- [ ] TODO: 产出对应契约测试套件骨架（路径、用例编号），与 contract.spec.yaml 一一映射
-- [ ] TODO: 锁定统一响应壳 `{code,message,data}` 与错误码枚举
+- [x] OpenAPI spec `crosser-api/contract.spec.yaml` — 9 endpoints: auth/login, services CRUD (5), config export, proxy register, proxy heartbeat
+- [x] Contract test suite `crosser-api/tests/contract/` — 15 scenarios (REQ-997-S1..S15) mapped 1:1 to spec
+- [x] Unified response envelope `{code, message, data}` + error code enum (1001..9999) locked in spec
+
+### Scenarios → Specs:
+- REQ-997-S1: Login success → `specs/auth/spec.md`
+- REQ-997-S2: Login invalid credentials → `specs/auth/spec.md`
+- REQ-997-S3: JWT auth rejection → `specs/auth/spec.md`
+- REQ-997-S4: Create service → `specs/services/spec.md`
+- REQ-997-S5: List services → `specs/services/spec.md`
+- REQ-997-S6: Get service detail → `specs/services/spec.md`
+- REQ-997-S7: Update service → `specs/services/spec.md`
+- REQ-997-S8: Delete service → `specs/services/spec.md`
+- REQ-997-S9: Service not found → `specs/services/spec.md`
+- REQ-997-S10: Duplicate service → `specs/services/spec.md`
+- REQ-997-S11: Config export → `specs/services/spec.md`
+- REQ-997-S12: Proxy register → `specs/proxy/spec.md`
+- REQ-997-S13: Proxy heartbeat → `specs/proxy/spec.md`
+- REQ-997-S14: Proxy token rejection → `specs/proxy/spec.md`
+- REQ-997-S15: Envelope structure → `specs/proxy/spec.md`
 
 ## Stage: acceptance-tests (owner: acceptance-spec-agent)
 - [x] 产出 FEATURE 列表（覆盖 AC-03.01 / 02 / 03 / 04 共 4 条原始验收）

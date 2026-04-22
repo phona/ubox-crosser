@@ -1,0 +1,548 @@
+openapi: "3.0.3"
+info:
+  title: crosser-api control plane
+  version: "0.1.0"
+  description: |
+    REST control plane for ubox-crosser. Manages services, users/keys,
+    proxy instance registration and status reporting.
+    Unified response envelope: {"code": 0, "message": "success", "data": ...}
+
+servers:
+  - url: http://localhost:8081/api/v1
+    description: Local development
+
+security:
+  - bearerAuth: []
+
+paths:
+  /auth/login:
+    post:
+      operationId: authLogin
+      summary: Admin login — returns JWT
+      security: []
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_LoginData"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponseError"
+
+  /services:
+    get:
+      operationId: listServices
+      summary: List all services
+      tags: [services]
+      responses:
+        "200":
+          description: Service list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_ServiceListData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      operationId: createService
+      summary: Create a new service
+      tags: [services]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateServiceRequest"
+      responses:
+        "201":
+          description: Service created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_ServiceData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          description: Service name already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponseError"
+
+  /services/{name}:
+    parameters:
+      - name: name
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getService
+      summary: Get service details (includes proxy instance status)
+      tags: [services]
+      responses:
+        "200":
+          description: Service details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_ServiceDetailData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      operationId: updateService
+      summary: Update service fields
+      tags: [services]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateServiceRequest"
+      responses:
+        "200":
+          description: Service updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_ServiceData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: deleteService
+      summary: Delete a service
+      tags: [services]
+      responses:
+        "200":
+          description: Service deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponseOk"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /services/{name}/config:
+    parameters:
+      - name: name
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getServiceConfig
+      summary: Export service config (server.json compatible format)
+      tags: [services]
+      responses:
+        "200":
+          description: Config in legacy server.json format
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_ServiceConfigData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /proxy/register:
+    post:
+      operationId: proxyRegister
+      summary: Register a proxy instance (machine token auth)
+      security:
+        - proxyTokenAuth: []
+      tags: [proxy]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProxyRegisterRequest"
+      responses:
+        "200":
+          description: Registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_ProxyRegisterData"
+        "401":
+          description: Invalid or missing proxy token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponseError"
+
+  /proxy/heartbeat:
+    post:
+      operationId: proxyHeartbeat
+      summary: Proxy heartbeat — update status and stats
+      security:
+        - proxyTokenAuth: []
+      tags: [proxy]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProxyHeartbeatRequest"
+      responses:
+        "200":
+          description: Heartbeat accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponseOk"
+        "401":
+          description: Invalid or missing proxy token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponseError"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    proxyTokenAuth:
+      type: apiKey
+      in: header
+      name: X-Proxy-Token
+
+  responses:
+    Unauthorized:
+      description: Missing or invalid authentication
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiResponseError"
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiResponseError"
+
+  schemas:
+    # ── Envelope ──
+    ApiResponseOk:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: integer
+          enum: [0]
+        message:
+          type: string
+
+    ApiResponseError:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: integer
+          description: "Non-zero error code"
+        message:
+          type: string
+
+    # ── Auth ──
+    LoginRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+          minLength: 1
+        password:
+          type: string
+          minLength: 1
+
+    LoginData:
+      type: object
+      required: [token, expires_at]
+      properties:
+        token:
+          type: string
+        expires_at:
+          type: string
+          format: date-time
+
+    ApiResponse_LoginData:
+      type: object
+      required: [code, message, data]
+      properties:
+        code:
+          type: integer
+          enum: [0]
+        message:
+          type: string
+        data:
+          $ref: "#/components/schemas/LoginData"
+
+    # ── Services ──
+    Service:
+      type: object
+      required: [name, key, method, address]
+      properties:
+        name:
+          type: string
+        key:
+          type: string
+        method:
+          type: string
+        address:
+          type: string
+        expose_address:
+          type: string
+        login_password:
+          type: string
+        auth_password:
+          type: string
+        log_file:
+          type: string
+        log_level:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    CreateServiceRequest:
+      type: object
+      required: [name, key, method, address]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        key:
+          type: string
+          minLength: 1
+        method:
+          type: string
+        address:
+          type: string
+        expose_address:
+          type: string
+        login_password:
+          type: string
+        auth_password:
+          type: string
+        log_file:
+          type: string
+        log_level:
+          type: string
+
+    UpdateServiceRequest:
+      type: object
+      properties:
+        key:
+          type: string
+        method:
+          type: string
+        address:
+          type: string
+        expose_address:
+          type: string
+        login_password:
+          type: string
+        auth_password:
+          type: string
+        log_file:
+          type: string
+        log_level:
+          type: string
+
+    ServiceDetailData:
+      type: object
+      required: [service, proxy_instances]
+      properties:
+        service:
+          $ref: "#/components/schemas/Service"
+        proxy_instances:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProxyInstance"
+
+    ServiceListData:
+      type: object
+      required: [services, total]
+      properties:
+        services:
+          type: array
+          items:
+            $ref: "#/components/schemas/Service"
+        total:
+          type: integer
+
+    ServiceConfigData:
+      type: object
+      required: [common]
+      properties:
+        common:
+          type: object
+          required: [key, method, address, login_password, auth_password, log_file, log_level]
+          properties:
+            key:
+              type: string
+            method:
+              type: string
+            address:
+              type: string
+            login_password:
+              type: string
+            auth_password:
+              type: string
+            log_file:
+              type: string
+            log_level:
+              type: string
+      additionalProperties:
+        type: object
+        properties:
+          key:
+            type: string
+
+    ApiResponse_ServiceData:
+      type: object
+      required: [code, message, data]
+      properties:
+        code:
+          type: integer
+          enum: [0]
+        message:
+          type: string
+        data:
+          $ref: "#/components/schemas/Service"
+
+    ApiResponse_ServiceDetailData:
+      type: object
+      required: [code, message, data]
+      properties:
+        code:
+          type: integer
+          enum: [0]
+        message:
+          type: string
+        data:
+          $ref: "#/components/schemas/ServiceDetailData"
+
+    ApiResponse_ServiceListData:
+      type: object
+      required: [code, message, data]
+      properties:
+        code:
+          type: integer
+          enum: [0]
+        message:
+          type: string
+        data:
+          $ref: "#/components/schemas/ServiceListData"
+
+    ApiResponse_ServiceConfigData:
+      type: object
+      required: [code, message, data]
+      properties:
+        code:
+          type: integer
+          enum: [0]
+        message:
+          type: string
+        data:
+          $ref: "#/components/schemas/ServiceConfigData"
+
+    # ── Proxy ──
+    ProxyInstance:
+      type: object
+      required: [instance_id, service_name, address, status]
+      properties:
+        instance_id:
+          type: string
+        service_name:
+          type: string
+        address:
+          type: string
+        status:
+          type: string
+          enum: [online, offline]
+        last_heartbeat:
+          type: string
+          format: date-time
+        connection_count:
+          type: integer
+
+    ProxyRegisterRequest:
+      type: object
+      required: [service_name, instance_id, address]
+      properties:
+        service_name:
+          type: string
+          minLength: 1
+        instance_id:
+          type: string
+          minLength: 1
+        address:
+          type: string
+          minLength: 1
+
+    ProxyRegisterData:
+      type: object
+      required: [token]
+      properties:
+        token:
+          type: string
+
+    ApiResponse_ProxyRegisterData:
+      type: object
+      required: [code, message, data]
+      properties:
+        code:
+          type: integer
+          enum: [0]
+        message:
+          type: string
+        data:
+          $ref: "#/components/schemas/ProxyRegisterData"
+
+    ProxyHeartbeatRequest:
+      type: object
+      required: [instance_id]
+      properties:
+        instance_id:
+          type: string
+          minLength: 1
+        connection_count:
+          type: integer
+          minimum: 0
+
+    # ── Error Codes (reference, not enforced in schema) ──
+    # 0     = success
+    # 1001  = invalid credentials
+    # 1002  = token expired
+    # 1003  = unauthorized
+    # 2001  = service not found
+    # 2002  = service already exists
+    # 2003  = invalid service data
+    # 3001  = invalid proxy token
+    # 3002  = proxy instance not found
+    # 9999  = internal server error

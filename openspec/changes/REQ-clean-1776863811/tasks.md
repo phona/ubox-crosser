@@ -20,10 +20,10 @@
 - [x] 场景 A5: 验证错误处理和边界条件
 
 ## Stage: implementation (owner: dev-agent)
-- [ ] 在 HTTP router 中注册 /version 端点处理函数
-- [ ] 实现版本信息结构体和 JSON 序列化
-- [ ] 在构建时通过 `-ldflags` 注入 git SHA
-- [ ] 更新 Makefile 编译流程以支持版本注入
-- [ ] 更新 CI/CD 流程（GitHub Actions）以传递 git SHA
-- [ ] 为 /version 端点添加单元测试
-- [ ] 验证编译和部署流程正确注入版本信息
+- [x] 在 HTTP router 中注册 /version 端点处理函数
+- [x] 实现版本信息结构体和 JSON 序列化
+- [x] 在构建时通过 `-ldflags` 注入 git SHA
+- [x] 更新 Makefile 编译流程以支持版本注入
+- [x] 更新 CI/CD 流程（GitHub Actions）以传递 git SHA
+- [x] 为 /version 端点添加单元测试
+- [x] 验证编译和部署流程正确注入版本信息

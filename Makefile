@@ -4,7 +4,7 @@ BINARIES := client server auth_server
 COVERAGE_DIR := coverage
 BUILD_ID ?= $(shell date +%s)
 COMMIT := $(shell git rev-parse HEAD 2>/dev/null || echo "unknown")
-GO_LDFLAGS := -ldflags="-s -w -X main.Version=$(COMMIT)"
+GO_LDFLAGS := -ldflags="-s -w -X main.GitSHA=$(COMMIT)"
 
 # ===========================================
 # Build Commands

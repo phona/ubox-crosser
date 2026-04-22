@@ -15,6 +15,8 @@ import (
 	"github.com/phona/ubox-crosser/utils/connector"
 )
 
+var GitSHA string = "unknown"
+
 // for opening a listener to proxy request
 type ProxyServer struct {
 	// generated from client
@@ -178,6 +180,7 @@ func (p *ProxyServer) handleConnErr(coordinator *connector.Coordinator, err erro
 }
 
 type VersionResponse struct {
+	SHA     string `json:"sha"`
 	Version string `json:"version"`
 	Module  string `json:"module"`
 	GoOS    string `json:"go_os"`
@@ -204,11 +207,12 @@ func (p *ProxyServer) handleVersion(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := VersionResponse{
+		SHA:     GitSHA,
 		Version: "1.0.0",
 		Module:  "github.com/phona/ubox-crosser",
 		GoOS:    runtime.GOOS,
 		GoArch:  runtime.GOARCH,
-		Commit:  p.version,
+		Commit:  GitSHA,
 	}
 
 	w.Header().Set("Content-Type", "application/json")

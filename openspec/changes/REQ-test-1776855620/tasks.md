@@ -2,7 +2,7 @@
 
 ## Overview
 - **Feature**: GET /healthz endpoint returning service uptime
-- **Current Stage**: contract-tests
+- **Current Stage**: implementation
 - **Status**: In Progress
 - **Requirement**: Add /healthz endpoint that returns server uptime in seconds
 
@@ -57,6 +57,43 @@
 - [ ] BKD issue updated with contract-spec tag
 - [ ] Ready for dev-agent to implement the endpoint
 
-## Next Stage: dev
-- dev-agent will implement /healthz endpoint in server/management.go
-- Tests should transition from RED to GREEN when implementation is complete
+## Stage: implementation
+
+### I.1. Implement /healthz Endpoint
+- [x] Add `startTime time.Time` field to `ManagementServer` struct
+- [x] Initialize `startTime` to `time.Now()` in `NewManagementServer()`
+- [x] Create `HealthzResponse` struct with `Status` and `UptimeSeconds` fields
+- [x] Register `/healthz` handler in `registerHandlers()` method
+- [x] Implement `handleHealthz()` method with:
+  - [x] GET method validation (return 405 for non-GET)
+  - [x] Uptime calculation using `time.Since(m.startTime).Seconds()`
+  - [x] JSON response with proper Content-Type header
+  - [x] Status field always set to "ok"
+
+### I.2. Add Unit Tests
+- [x] Create comprehensive unit tests in `server/management_test.go`
+  - [x] Test GET /healthz returns 200 OK with correct Content-Type
+  - [x] Test response contains valid JSON with status and uptime_seconds
+  - [x] Test uptime value increases monotonically between calls
+  - [x] Test POST /healthz returns 405 Method Not Allowed
+  - [x] Test PUT /healthz returns 405 Method Not Allowed
+  - [x] Test DELETE /healthz returns 405 Method Not Allowed
+
+### I.3. Code Quality
+- [x] Follow existing code patterns (consistent with /health and /version handlers)
+- [x] Add proper error handling and Content-Type headers
+- [x] Ensure no external dependencies beyond stdlib
+
+### I.4. Documentation
+- [x] Implementation matches design.md specification
+- [x] Adheres to the spec.md scenarios and acceptance criteria
+
+## Definition of Done (Implementation Stage)
+- [x] /healthz endpoint implemented in server/management.go
+- [x] Unit tests added to server/management_test.go
+- [x] Code follows project conventions
+- [x] Ready for testing by staging-test-agent
+
+## Next Stage: acceptance
+- staging-test-agent will run contract tests and verify all scenarios pass
+- PR will be created and moved to review stage

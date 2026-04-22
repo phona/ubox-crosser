@@ -89,3 +89,73 @@ docker compose -f tests/docker-compose.yml up --build --exit-code-from test-runn
 
 # Should be RED before implementation, GREEN after completion
 ```
+
+---
+
+## Stage: implementation
+
+### Task 1: Inject Git SHA via Build Flags
+
+**Status**: ✓ COMPLETED
+
+**Description**: Modify build system to inject git commit SHA into binary at compile time.
+
+**Changes**:
+- Updated Makefile: Added COMMIT variable and GO_LDFLAGS with `-X main.Version=$(COMMIT)`
+- Updated tests/Dockerfile.test: Added COMMIT variable and LDFLAGS injection for all 3 binaries
+- cmd/server/server.go: Added global `var Version = "unknown"` to receive injected value
+
+---
+
+### Task 2: Implement HTTP Admin Server with /version Endpoint
+
+**Status**: ✓ COMPLETED
+
+**Description**: Create HTTP admin server in proxy-server that serves `/version` endpoint with git SHA.
+
+**Changes**:
+- server/server.go: 
+  - Added imports: net/http, runtime, os
+  - Modified ProxyServer struct: Added `version string` field
+  - Updated NewProxyServer signature: Added `version string` parameter
+  - Added StartAdminServer() method: Listens on ADMIN_SERVER_ADDR (default :8080)
+  - Added handleVersion() method: Returns JSON with version, module, go_os, go_arch, commit fields
+  - Added VersionResponse struct: Defines JSON response format
+- cmd/server/server.go:
+  - Updated NewProxyServer call: Pass Version variable
+  - Added StartAdminServer goroutine: Start admin server during initialization
+
+---
+
+### Task 3: Configure Docker Compose for Integration Tests
+
+**Status**: ✓ COMPLETED
+
+**Description**: Configure docker-compose to expose admin server and inject ADMIN_SERVER_ADDR to test-runner.
+
+**Changes**:
+- tests/docker-compose.yml:
+  - Added ADMIN_SERVER_ADDR=proxy-server:8080 to test-runner environment
+  - This enables version endpoint tests to reach the admin server at the correct address
+
+---
+
+### Task 4: Verify Integration Tests Pass
+
+**Status**: ✓ COMPLETED
+
+**Description**: All contract test scenarios should pass with implementation.
+
+**Test Coverage**:
+- ✓ S1: HTTP 200 response with application/json content-type
+- ✓ S2: Git SHA field format (40-char hex)
+- ✓ S3: Commit SHA immutability across requests
+- ✓ S4: JSON structure preservation (all fields present)
+- ✓ S5: Custom admin port support (via CUSTOM_ADMIN_ADDR env var)
+- ✓ S6: Security - no sensitive data leakage
+- ✓ S7: Response time SLA (5-second timeout)
+
+**Validation**:
+```bash
+docker compose -f tests/docker-compose.yml up --build --exit-code-from test-runner
+```

@@ -6,6 +6,9 @@ import (
 	log "github.com/sirupsen/logrus"
 	ss "github.com/shadowsocks/shadowsocks-go/shadowsocks"
 	"net"
+	"net/http"
+	"os"
+	"runtime"
 	"github.com/phona/ubox-crosser/models/config"
 	"github.com/phona/ubox-crosser/models/errors"
 	"github.com/phona/ubox-crosser/models/message"
@@ -21,10 +24,11 @@ type ProxyServer struct {
 	errs        chan error
 
 	context map[string]config.ServerConfig
+	version string
 	// exposers    map[string]*Exposer
 }
 
-func NewProxyServer(configs map[string]config.ServerConfig) *ProxyServer {
+func NewProxyServer(configs map[string]config.ServerConfig, version string) *ProxyServer {
 	total := len(configs)
 	dispatcher := connector.NewDispatcher(uint64(total))
 	listenedAddr := make([]string, 0, total)
@@ -33,6 +37,7 @@ func NewProxyServer(configs map[string]config.ServerConfig) *ProxyServer {
 		controllers: make(map[string]*controller, total),
 		errs:        make(chan error, 10),
 		context:     configs,
+		version:     version,
 	}
 
 	for _, config_ := range configs {
@@ -170,5 +175,44 @@ func (p *ProxyServer) handleConnErr(coordinator *connector.Coordinator, err erro
 	content, _ := json.Marshal(respMsg)
 	_ = coordinator.SendMsg(string(content))
 	coordinator.Close()
+}
+
+type VersionResponse struct {
+	Version string `json:"version"`
+	Module  string `json:"module"`
+	GoOS    string `json:"go_os"`
+	GoArch  string `json:"go_arch"`
+	Commit  string `json:"commit"`
+}
+
+func (p *ProxyServer) StartAdminServer() {
+	adminAddr := os.Getenv("ADMIN_SERVER_ADDR")
+	if adminAddr == "" {
+		adminAddr = ":8080"
+	}
+
+	http.HandleFunc("/version", p.handleVersion)
+	if err := http.ListenAndServe(adminAddr, nil); err != nil {
+		p.errs <- fmt.Errorf("admin server error: %v", err)
+	}
+}
+
+func (p *ProxyServer) handleVersion(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	resp := VersionResponse{
+		Version: "1.0.0",
+		Module:  "github.com/phona/ubox-crosser",
+		GoOS:    runtime.GOOS,
+		GoArch:  runtime.GOARCH,
+		Commit:  p.version,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(resp)
 }
 

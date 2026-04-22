@@ -31,12 +31,12 @@
 - [ ] Verify all scenario names follow pattern `REQ-fresh-1776858473-S*`
 - [ ] Verify no breaking changes to existing endpoints
 
-## Next Stage: dev
+## Stage: dev
 
-Implementation tasks (to be completed by dev-agent):
-- [ ] Update `VersionInfo` struct to include `GitSha` field
-- [ ] Enhance `handleVersion()` to extract git SHA from build metadata
-- [ ] Implement git SHA extraction logic in `server/management.go`
+Implementation tasks:
+- [x] Update `VersionInfo` struct to include `GitSha` field
+- [x] Enhance `handleVersion()` to extract git SHA from build metadata
+- [x] Implement git SHA extraction logic in `server/management.go`
 - [ ] Run contract tests to verify RED→GREEN transition
 - [ ] Ensure all tests pass before marking stage complete
 

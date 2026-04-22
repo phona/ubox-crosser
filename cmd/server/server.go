@@ -8,9 +8,11 @@ import (
 	"os"
 	"github.com/phona/ubox-crosser/log"
 	"github.com/phona/ubox-crosser/models/config"
-	"github.com/phona/ubox-crosser/server"
+	srv "github.com/phona/ubox-crosser/server"
 	"github.com/phona/ubox-crosser/utils/conf"
 )
+
+var GitSHA = "unknown"
 
 func main() {
 	var cmdConfig config.ServerConfig
@@ -39,8 +41,10 @@ func main() {
 				logrus.Infoln("Using configuration from configure file")
 				logrus.Infof("Config init: %s", content)
 			}
-			proxy := server.NewProxyServer(configs)
+			srv.GitSHA = GitSHA
+			proxy := srv.NewProxyServer(configs, GitSHA)
 			go proxy.Process()
+			go proxy.StartAdminServer()
 			func() {
 				for {
 					logrus.Errorln(proxy.Err())

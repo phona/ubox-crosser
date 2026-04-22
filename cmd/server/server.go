@@ -12,6 +12,8 @@ import (
 	"github.com/phona/ubox-crosser/utils/conf"
 )
 
+var GitSHA = "unknown"
+
 func main() {
 	var cmdConfig config.ServerConfig
 	cmd := &cobra.Command{
@@ -39,7 +41,7 @@ func main() {
 				logrus.Infoln("Using configuration from configure file")
 				logrus.Infof("Config init: %s", content)
 			}
-			proxy := server.NewProxyServer(configs)
+			proxy := server.NewProxyServer(configs, GitSHA)
 			go proxy.Process()
 			func() {
 				for {

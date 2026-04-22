@@ -1,11 +1,15 @@
 package server
 
 import (
+	"bufio"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	ss "github.com/shadowsocks/shadowsocks-go/shadowsocks"
+	"io"
 	"net"
+	"net/http"
 	"github.com/phona/ubox-crosser/models/config"
 	"github.com/phona/ubox-crosser/models/errors"
 	"github.com/phona/ubox-crosser/models/message"
@@ -21,10 +25,11 @@ type ProxyServer struct {
 	errs        chan error
 
 	context map[string]config.ServerConfig
+	gitSHA  string
 	// exposers    map[string]*Exposer
 }
 
-func NewProxyServer(configs map[string]config.ServerConfig) *ProxyServer {
+func NewProxyServer(configs map[string]config.ServerConfig, gitSHA string) *ProxyServer {
 	total := len(configs)
 	dispatcher := connector.NewDispatcher(uint64(total))
 	listenedAddr := make([]string, 0, total)
@@ -33,6 +38,7 @@ func NewProxyServer(configs map[string]config.ServerConfig) *ProxyServer {
 		controllers: make(map[string]*controller, total),
 		errs:        make(chan error, 10),
 		context:     configs,
+		gitSHA:      gitSHA,
 	}
 
 	for _, config_ := range configs {
@@ -89,10 +95,29 @@ func (p *ProxyServer) Process() {
 	}
 }
 
+
 func (p *ProxyServer) handleConnection(conn net.Conn) {
 	log.Infof("Remote address %s connect to center server", conn.RemoteAddr().String())
-	coordinator := connector.AsCoordinator(conn)
 
+	peek := make([]byte, 4)
+	if n, err := conn.Read(peek); err != nil || n < 4 {
+		log.Warnf("Failed to peek connection data: %v", err)
+		conn.Close()
+		return
+	}
+
+	if p.isHTTPRequest(peek) {
+		p.handleHTTPRequest(conn, peek)
+		return
+	}
+
+	combinedReader := io.MultiReader(bytes.NewReader(peek), conn)
+	bufferedConn := &bufferedConn{
+		Conn:   conn,
+		reader: bufio.NewReader(combinedReader),
+	}
+
+	coordinator := connector.AsCoordinator(bufferedConn)
 	var reqMsg message.Message
 	if content, err := coordinator.ReadMsg(); err != nil {
 		p.errs <- err
@@ -115,6 +140,53 @@ func (p *ProxyServer) handleConnection(conn net.Conn) {
 			p.handleConnErr(coordinator, fmt.Errorf("Unknown type %d were received", reqMsg.Type), errors.UNKNOWN_CODE)
 		}
 	}
+}
+
+type bufferedConn struct {
+	net.Conn
+	reader *bufio.Reader
+}
+
+func (bc *bufferedConn) Read(b []byte) (int, error) {
+	return bc.reader.Read(b)
+}
+
+func (p *ProxyServer) isHTTPRequest(data []byte) bool {
+	if len(data) < 4 {
+		return false
+	}
+	return (data[0] == 'G' && data[1] == 'E' && data[2] == 'T') ||
+		(data[0] == 'P' && data[1] == 'O' && data[2] == 'S') ||
+		(data[0] == 'D' && data[1] == 'E' && data[2] == 'L') ||
+		(data[0] == 'H' && data[1] == 'E' && data[2] == 'A') ||
+		(data[0] == 'P' && data[1] == 'U' && data[2] == 'T')
+}
+
+func (p *ProxyServer) handleHTTPRequest(conn net.Conn, peek []byte) {
+	defer conn.Close()
+
+	buf := make([]byte, 4096)
+	copy(buf, peek)
+	n, err := conn.Read(buf[4:])
+	if err != nil && err.Error() != "EOF" {
+		log.Warnf("Failed to read HTTP request: %v", err)
+		return
+	}
+
+	totalData := buf[:4+n]
+
+	if p.isVersionRequest(string(totalData)) {
+		response := fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: %d\r\n\r\n{\"sha\":\"%s\"}\n",
+			len(p.gitSHA)+11, p.gitSHA)
+		conn.Write([]byte(response))
+	} else {
+		response := "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n"
+		conn.Write([]byte(response))
+	}
+}
+
+func (p *ProxyServer) isVersionRequest(request string) bool {
+	return len(request) > 13 && request[:12] == "GET /version"
 }
 
 func (p *ProxyServer) handleLoginRequest(serveName, loginPass string, coordinator *connector.Coordinator) {

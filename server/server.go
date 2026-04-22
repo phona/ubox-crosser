@@ -176,8 +176,8 @@ func (p *ProxyServer) handleHTTPRequest(conn net.Conn, peek []byte) {
 	totalData := buf[:4+n]
 
 	if p.isVersionRequest(string(totalData)) {
-		response := fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: %d\r\n\r\n{\"sha\":\"%s\"}\n",
-			len(p.gitSHA)+11, p.gitSHA)
+		body := fmt.Sprintf("{\"sha\":\"%s\"}\n", p.gitSHA)
+		response := fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: %d\r\n\r\n%s", len(body), body)
 		conn.Write([]byte(response))
 	} else {
 		response := "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n"

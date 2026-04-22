@@ -17,7 +17,7 @@ title: "version endpoint — tasks"
 - [ ] FEATURE-A5: /api/version 在正常条件下 500ms 内响应 (`specs/version-endpoint/spec.md::FEATURE-A5`)
 
 ## Stage: implementation (owner: dev-agent)
-- [ ] TODO: version/handler.go — var Commit + Handler function (GET-only, return JSON with commit)
-- [ ] TODO: server/admin.go — register /api/version route in NewAdminMux()
-- [ ] TODO: Makefile — add LDFLAGS with -X version.Commit=$(git rev-parse HEAD)
-- [ ] TODO: version/handler_test.go — unit tests (GET 200, non-GET 405, empty commit defaults to "unknown")
+- [x] version/handler.go — var Commit + Handler function (GET-only, return JSON with commit)
+- [x] server/admin.go — register /api/version route in NewAdminMux()
+- [x] Makefile — add LDFLAGS with -X version.Commit=$(git rev-parse HEAD)
+- [x] version/handler_test.go — unit tests (GET 200, non-GET 405, empty commit defaults to "unknown")

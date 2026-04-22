@@ -1,5 +1,7 @@
 SOURCES := $(shell find . -name "*.go")
 MODULE := github.com/phona/ubox-crosser
+COMMIT := $(shell git rev-parse HEAD)
+LDFLAGS := -s -w -X $(MODULE)/version.Commit=$(COMMIT)
 BINARIES := client server auth_server
 COVERAGE_DIR := coverage
 BUILD_ID ?= $(shell date +%s)
@@ -12,9 +14,9 @@ BUILD_ID ?= $(shell date +%s)
 
 build: $(SOURCES)
 	@echo "=== Building binaries ==="
-	CGO_ENABLED=0 go build -ldflags="-s -w" -o bin/client ./cmd/client
-	CGO_ENABLED=0 go build -ldflags="-s -w" -o bin/server ./cmd/server
-	CGO_ENABLED=0 go build -ldflags="-s -w" -o bin/auth_server ./cmd/auth_server
+	CGO_ENABLED=0 go build -ldflags="$(LDFLAGS)" -o bin/client ./cmd/client
+	CGO_ENABLED=0 go build -ldflags="$(LDFLAGS)" -o bin/server ./cmd/server
+	CGO_ENABLED=0 go build -ldflags="$(LDFLAGS)" -o bin/auth_server ./cmd/auth_server
 
 clean:
 	rm -rf bin/ $(COVERAGE_DIR)/

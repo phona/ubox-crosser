@@ -9,11 +9,12 @@
 - [ ] 验证端点不接受其他 HTTP 方法
 
 ## Stage: acceptance-tests (owner: acceptance-spec-agent)
-- [ ] 部署代码后验证 /version 端点可访问
-- [ ] 验证返回的 git SHA 与当前部署代码一致
-- [ ] 验证多次调用端点结果一致（幂等性）
-- [ ] 验证端点响应时间满足性能要求
-- [ ] 验证端点在服务启动后立即可用
+- [x] 定义 acceptance spec 中的验收场景（FEATURE-A1 到 A5）
+- [x] 场景 A1: 部署后端点立即可访问
+- [x] 场景 A2: 返回的 git SHA 与部署代码一致
+- [x] 场景 A3: 验证多次调用端点结果一致（幂等性）
+- [x] 场景 A4: 验证端点响应时间满足性能要求（<100ms）
+- [x] 场景 A5: 验证错误处理和边界条件
 
 ## Stage: implementation (owner: dev-agent)
 - [ ] 在 HTTP router 中注册 /version 端点处理函数

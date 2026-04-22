@@ -10,10 +10,11 @@ RUN go mod download
 
 COPY . .
 
-# Build all binaries with coverage instrumentation
-RUN CGO_ENABLED=0 go build -cover -o /app/client ./cmd/client && \
-    CGO_ENABLED=0 go build -cover -o /app/server ./cmd/server && \
-    CGO_ENABLED=0 go build -cover -o /app/auth_server ./cmd/auth_server
+# Build all binaries with coverage instrumentation and git SHA injection
+RUN COMMIT=$(git rev-parse HEAD 2>/dev/null || echo "unknown") && \
+    CGO_ENABLED=0 go build -cover -ldflags="-X main.GitSha=$COMMIT" -o /app/client ./cmd/client && \
+    CGO_ENABLED=0 go build -cover -ldflags="-X main.GitSha=$COMMIT" -o /app/server ./cmd/server && \
+    CGO_ENABLED=0 go build -cover -ldflags="-X main.GitSha=$COMMIT" -o /app/auth_server ./cmd/auth_server
 
 # Build a tiny TCP healthcheck tool
 RUN printf 'package main\nimport("net";"os";"time")\nfunc main(){c,e:=net.DialTimeout("tcp",os.Args[1],2*time.Second);if e!=nil{os.Exit(1)};c.Close()}\n' > /tmp/healthcheck.go && \

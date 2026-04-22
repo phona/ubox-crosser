@@ -78,6 +78,7 @@ services:
       - PROXY_SERVER_ADDR=proxy-server:7000
       - AUTH_SERVER_ADDR=auth-server:7002
       - ECHO_SERVER_ADDR=echo-server:9000
+      - ADMIN_SERVER_ADDR=proxy-server:8080
       - TEST_CIPHER_KEY=test-secret-key-123
       - TEST_CIPHER_METHOD=chacha20
       - TEST_LOGIN_PASSWORD=test-login-pass

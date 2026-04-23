@@ -34,7 +34,7 @@ func NewProxyServer(configs map[string]config.ServerConfig) *ProxyServer {
 		controllers:   make(map[string]*controller, total),
 		errs:          make(chan error, 10),
 		context:       configs,
-		healthChecker: NewHealthChecker("localhost:8080"),
+		healthChecker: NewHealthChecker(":8080"),
 	}
 
 	for _, config_ := range configs {

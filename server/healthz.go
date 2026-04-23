@@ -22,6 +22,9 @@ type HealthChecker struct {
 }
 
 func NewHealthChecker(addr string) *HealthChecker {
+	if addr == "" {
+		addr = ":8080"
+	}
 	return &HealthChecker{
 		startTime: time.Now(),
 		addr:      addr,

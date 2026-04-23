@@ -1,0 +1,35 @@
+openapi: "3.0.3"
+info:
+  title: ubox-crosser Management API
+  version: "1.0.0"
+paths:
+  /buildinfo:
+    get:
+      summary: Return build metadata
+      description: >
+        Returns the git SHA, build ID, and Go version baked into the binary.
+        No authentication required.
+      responses:
+        "200":
+          description: Build metadata JSON
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - git_sha
+                  - build_id
+                  - go_version
+                properties:
+                  git_sha:
+                    type: string
+                    description: 7-character git commit SHA injected at build time via ldflags
+                    example: "abc1234"
+                  build_id:
+                    type: string
+                    description: Value of BUILD_ID env var at startup; defaults to "dev"
+                    example: "ci-42"
+                  go_version:
+                    type: string
+                    description: Go toolchain version used to build the binary
+                    example: "go1.23"

@@ -13,7 +13,7 @@ BUILD_ID ?= $(shell date +%s)
 build: $(SOURCES)
 	@echo "=== Building binaries ==="
 	CGO_ENABLED=0 go build -ldflags="-s -w" -o bin/client ./cmd/client
-	CGO_ENABLED=0 go build -ldflags="-s -w" -o bin/server ./cmd/server
+	CGO_ENABLED=0 go build -ldflags="-s -w -X main.GitSHA=$(shell git rev-parse --short HEAD)" -o bin/server ./cmd/server
 	CGO_ENABLED=0 go build -ldflags="-s -w" -o bin/auth_server ./cmd/auth_server
 
 clean:

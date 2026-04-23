@@ -1,0 +1,35 @@
+openapi: "3.0.3"
+info:
+  title: ubox-crosser buildinfo API
+  version: "1.0.0"
+paths:
+  /buildinfo:
+    get:
+      summary: Return build metadata
+      operationId: getBuildInfo
+      security: []
+      responses:
+        "200":
+          description: Build metadata JSON
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BuildInfo"
+components:
+  schemas:
+    BuildInfo:
+      type: object
+      required: [git_sha, build_id, go_version]
+      properties:
+        git_sha:
+          type: string
+          description: 7-character git commit SHA (empty string when built without ldflags)
+          example: "abc1234"
+        build_id:
+          type: string
+          description: CI build identifier; "dev" when BUILD_ID env var is unset
+          example: "42"
+        go_version:
+          type: string
+          description: Go toolchain version hardcoded at compile time
+          example: "go1.23"

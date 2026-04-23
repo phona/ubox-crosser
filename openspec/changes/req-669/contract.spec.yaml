@@ -1,0 +1,60 @@
+openapi: "3.1.0"
+info:
+  title: ubox-crosser Admin API
+  version: "0.1.0"
+  description: Lightweight admin HTTP API for the ubox-crosser proxy tunnel.
+paths:
+  /version:
+    get:
+      operationId: getVersion
+      summary: Return build metadata
+      description: Returns the server's version, git commit hash, and build timestamp.
+      responses:
+        "200":
+          description: Build version info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VersionInfo"
+        "405":
+          description: Method not allowed (non-GET requests)
+    post:
+      operationId: postVersionNotAllowed
+      summary: Not allowed
+      responses:
+        "405":
+          description: Method not allowed
+    put:
+      operationId: putVersionNotAllowed
+      summary: Not allowed
+      responses:
+        "405":
+          description: Method not allowed
+    delete:
+      operationId: deleteVersionNotAllowed
+      summary: Not allowed
+      responses:
+        "405":
+          description: Method not allowed
+components:
+  schemas:
+    VersionInfo:
+      type: object
+      required:
+        - version
+        - commit
+        - build_time
+      properties:
+        version:
+          type: string
+          description: Semantic version of the server binary.
+          example: "0.1.0"
+        commit:
+          type: string
+          description: Short git commit hash injected at build time. Defaults to "unknown".
+          example: "abc1234"
+        build_time:
+          type: string
+          format: date-time
+          description: UTC build timestamp injected at build time. Defaults to "unknown".
+          example: "2026-04-20T12:00:00Z"

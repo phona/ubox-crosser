@@ -3,14 +3,18 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/sirupsen/logrus"
-	"github.com/spf13/cobra"
 	"os"
+
 	"github.com/phona/ubox-crosser/log"
 	"github.com/phona/ubox-crosser/models/config"
 	"github.com/phona/ubox-crosser/server"
 	"github.com/phona/ubox-crosser/utils/conf"
+	"github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
 )
+
+// GitSHA is set at build time via -ldflags "-X main.GitSHA=$(git rev-parse --short HEAD)".
+var GitSHA = "dev"
 
 func main() {
 	var cmdConfig config.ServerConfig
@@ -41,6 +45,11 @@ func main() {
 			}
 			proxy := server.NewProxyServer(configs)
 			go proxy.Process()
+			go func() {
+				if err := server.StartHTTPServer(":8080", GitSHA); err != nil {
+					logrus.Errorf("HTTP server error: %v", err)
+				}
+			}()
 			func() {
 				for {
 					logrus.Errorln(proxy.Err())

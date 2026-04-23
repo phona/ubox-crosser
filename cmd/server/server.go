@@ -3,14 +3,21 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"os"
+
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"os"
+
 	"github.com/phona/ubox-crosser/log"
 	"github.com/phona/ubox-crosser/models/config"
 	"github.com/phona/ubox-crosser/server"
 	"github.com/phona/ubox-crosser/utils/conf"
 )
+
+// adminHTTPAddr is the fixed bind address for the admin HTTP listener that
+// serves /buildinfo (and future read-only endpoints like /healthz).
+const adminHTTPAddr = ":8080"
 
 func main() {
 	var cmdConfig config.ServerConfig
@@ -41,6 +48,7 @@ func main() {
 			}
 			proxy := server.NewProxyServer(configs)
 			go proxy.Process()
+			go startAdminHTTP()
 			func() {
 				for {
 					logrus.Errorln(proxy.Err())
@@ -82,5 +90,13 @@ func main() {
 	if err := cmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(0)
+	}
+}
+
+func startAdminHTTP() {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/buildinfo", BuildInfoHandler)
+	if err := server.StartAdminHTTP(adminHTTPAddr, mux); err != nil {
+		logrus.Errorf("admin http listener on %s exited: %v", adminHTTPAddr, err)
 	}
 }

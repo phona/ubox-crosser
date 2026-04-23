@@ -4,15 +4,20 @@
 
 FROM golang:1.23
 
+# GIT_SHA is baked into the server binary so /buildinfo integration tests
+# can assert a real 7-char SHA instead of the default "unknown".
+ARG GIT_SHA=unknown
+
 WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
 
-# Build all binaries with coverage instrumentation
+# Build all binaries with coverage instrumentation. Only the server gets
+# ldflags GitSHA; client/auth_server have no such main-package var.
 RUN CGO_ENABLED=0 go build -cover -o /app/client ./cmd/client && \
-    CGO_ENABLED=0 go build -cover -o /app/server ./cmd/server && \
+    CGO_ENABLED=0 go build -cover -ldflags="-X main.GitSHA=${GIT_SHA}" -o /app/server ./cmd/server && \
     CGO_ENABLED=0 go build -cover -o /app/auth_server ./cmd/auth_server
 
 # Build a tiny TCP healthcheck tool

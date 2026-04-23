@@ -19,12 +19,20 @@ services:
     build:
       context: ..
       dockerfile: tests/Dockerfile.test
+      args:
+        # Forwarded into the server binary as `main.GitSHA` so /buildinfo
+        # can report the 7-char commit. Makefile sets GIT_SHA; local
+        # `docker compose up` without the Makefile defaults to "unknown".
+        GIT_SHA: "${GIT_SHA:-unknown}"
     command: ["server", "--config-file", "/etc/crosser/server.json"]
     volumes:
       - ./configs/server.json:/etc/crosser/server.json:ro
       - coverage-data:/coverage
     environment:
       - GOCOVERDIR=/coverage
+      # /buildinfo reads BUILD_ID on every request. Makefile sets it; the
+      # integration test asserts this exact value round-trips.
+      - BUILD_ID=${BUILD_ID:-dev}
     healthcheck:
       test: ["CMD", "healthcheck", "localhost:7000"]
       interval: 2s
@@ -76,6 +84,7 @@ services:
       "
     environment:
       - PROXY_SERVER_ADDR=proxy-server:7000
+      - PROXY_SERVER_ADMIN_ADDR=proxy-server:8080
       - AUTH_SERVER_ADDR=auth-server:7002
       - ECHO_SERVER_ADDR=echo-server:9000
       - TEST_CIPHER_KEY=test-secret-key-123
@@ -83,6 +92,11 @@ services:
       - TEST_LOGIN_PASSWORD=test-login-pass
       - TEST_AUTH_PASSWORD=test-auth-pass
       - TEST_SERVE_NAME=test_service
+      # /buildinfo integration test asserts these round-trip through the
+      # server (GIT_SHA via ldflag, BUILD_ID via env). They mirror the
+      # values the proxy-server service is built / run with above.
+      - EXPECTED_BUILD_ID=${BUILD_ID:-dev}
+      - EXPECTED_GIT_SHA=${GIT_SHA:-unknown}
     depends_on:
       echo-server:
         condition: service_started

@@ -4,6 +4,11 @@ BINARIES := client server auth_server
 COVERAGE_DIR := coverage
 BUILD_ID ?= $(shell date +%s)
 
+# /buildinfo ldflag injection: 7-char git SHA baked into the server binary.
+# Falls back to "unknown" when .git is unavailable (e.g. shallow image builds).
+GIT_SHA ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo unknown)
+SERVER_LDFLAGS := -s -w -X main.GitSHA=$(GIT_SHA)
+
 # ===========================================
 # Build Commands
 # ===========================================
@@ -13,7 +18,7 @@ BUILD_ID ?= $(shell date +%s)
 build: $(SOURCES)
 	@echo "=== Building binaries ==="
 	CGO_ENABLED=0 go build -ldflags="-s -w" -o bin/client ./cmd/client
-	CGO_ENABLED=0 go build -ldflags="-s -w" -o bin/server ./cmd/server
+	CGO_ENABLED=0 go build -ldflags="$(SERVER_LDFLAGS)" -o bin/server ./cmd/server
 	CGO_ENABLED=0 go build -ldflags="-s -w" -o bin/auth_server ./cmd/auth_server
 
 clean:
@@ -88,6 +93,8 @@ test-integration:
 	@mkdir -p $(COVERAGE_DIR)/raw
 	@chmod -R 777 $(COVERAGE_DIR)
 	COVERAGE_HOST_DIR=$(CURDIR)/$(COVERAGE_DIR)/raw \
+	BUILD_ID=$(BUILD_ID) \
+	GIT_SHA=$(GIT_SHA) \
 		docker compose -p crosser-test-$(BUILD_ID) -f tests/docker-compose.yml up --build --exit-code-from test-runner
 	@echo "=== Merging coverage data ==="
 	@if ls $(COVERAGE_DIR)/raw/cov* 1>/dev/null 2>&1; then \
@@ -133,5 +140,5 @@ ci-integration-test:
 ci-build:
 	@echo "Building Docker images..."
 	docker build -t ubox-crosser-client --build-arg BINARY=client -f Dockerfile .
-	docker build -t ubox-crosser-server --build-arg BINARY=server -f Dockerfile .
+	docker build -t ubox-crosser-server --build-arg BINARY=server --build-arg GIT_SHA=$(GIT_SHA) -f Dockerfile .
 	docker build -t ubox-crosser-auth-server --build-arg BINARY=auth_server -f Dockerfile .

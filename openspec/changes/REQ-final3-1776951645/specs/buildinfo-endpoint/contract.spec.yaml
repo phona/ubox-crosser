@@ -1,0 +1,89 @@
+openapi: 3.0.3
+info:
+  title: ubox-crosser admin API — /buildinfo
+  version: "1.0.0"
+  description: |
+    Unauthenticated build-identification endpoint exposed by the
+    `ubox-crosser server` binary on its admin HTTP listener. Used by
+    operators, CI, and health dashboards to identify exactly which
+    build is running.
+
+servers:
+  - url: http://{host}:{port}
+    description: Admin HTTP listener
+    variables:
+      host:
+        default: localhost
+        description: Host or service name the server is bound to
+      port:
+        default: "8080"
+        description: Admin HTTP listener port (fixed at 8080)
+
+paths:
+  /buildinfo:
+    get:
+      operationId: getBuildInfo
+      summary: Return build identification for the running server binary
+      description: |
+        Returns a fixed-shape JSON document describing the compiled
+        binary. No authentication. Safe to call repeatedly (read-only,
+        O(1), no I/O beyond one env read).
+      responses:
+        "200":
+          description: Build info returned successfully
+          headers:
+            Content-Type:
+              schema:
+                type: string
+                const: application/json
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BuildInfo"
+              examples:
+                typical:
+                  summary: Typical response from a CI-built server
+                  value:
+                    git_sha: "a1b2c3d"
+                    build_id: "ci-12345"
+                    go_version: "go1.23"
+                local:
+                  summary: Response from a locally-built server without ldflags
+                  value:
+                    git_sha: "unknown"
+                    build_id: "dev"
+                    go_version: "go1.23"
+
+components:
+  schemas:
+    BuildInfo:
+      type: object
+      required: [git_sha, build_id, go_version]
+      additionalProperties: false
+      properties:
+        git_sha:
+          type: string
+          description: |
+            7-character git SHA of the commit the binary was built from,
+            or the literal `"unknown"` when the build did not pass
+            `-ldflags "-X main.GitSHA=<sha>"` (e.g. local `go run`).
+          minLength: 1
+          maxLength: 40
+          examples: ["a1b2c3d", "unknown"]
+        build_id:
+          type: string
+          description: |
+            Value of the `BUILD_ID` environment variable at request
+            time, or the literal `"dev"` when `BUILD_ID` is unset or
+            empty. Read fresh on every request so operators can
+            redeploy with a new `BUILD_ID` without restarting.
+          minLength: 1
+          examples: ["ci-12345", "dev"]
+        go_version:
+          type: string
+          description: |
+            Go toolchain the binary is built with. Hard-coded to
+            `"go1.23"` to produce a stable string; a unit test
+            cross-checks this literal against the `go` directive in
+            `go.mod`.
+          const: "go1.23"

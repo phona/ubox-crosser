@@ -153,5 +153,6 @@ ci-test:
 
 # dev-cross-check: lint + unit tests (dev_cross_check gate)
 dev-cross-check:
+	$(MAKE) ci-setup
 	$(MAKE) ci-lint
 	$(MAKE) ci-unit-test

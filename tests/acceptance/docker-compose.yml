@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  ubox-crosser:
+    build:
+      context: ../../
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"  # Health check endpoint
+      - "1080:1080"  # SOCKS5 proxy
+    environment:
+      - LOG_LEVEL=info
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    networks:
+      - test-network
+
+  test-client:
+    image: curlimages/curl:latest
+    depends_on:
+      ubox-crosser:
+        condition: service_healthy
+    networks:
+      - test-network
+    command:
+      - sh
+      - -c
+      - |
+        echo "Testing /healthz endpoint..."
+        curl -v http://ubox-crosser:8080/healthz
+        echo ""
+        echo "Health check test completed"
+
+networks:
+  test-network:
+    driver: bridge

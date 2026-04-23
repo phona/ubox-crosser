@@ -21,6 +21,9 @@ func getBuildInfoAddr() string {
 
 // TestBuildinfoReturns200 [UBOX-S1]
 func TestBuildinfoReturns200(t *testing.T) {
+	if testing.Short() {
+		t.Skip("acceptance test requires a live server")
+	}
 	resp, err := http.Get(fmt.Sprintf("http://%s/buildinfo", getBuildInfoAddr()))
 	if err != nil {
 		t.Fatalf("request to /buildinfo failed: %v", err)
@@ -34,6 +37,9 @@ func TestBuildinfoReturns200(t *testing.T) {
 
 // TestBuildinfoResponseIsJSON [UBOX-S2]
 func TestBuildinfoResponseIsJSON(t *testing.T) {
+	if testing.Short() {
+		t.Skip("acceptance test requires a live server")
+	}
 	resp, err := http.Get(fmt.Sprintf("http://%s/buildinfo", getBuildInfoAddr()))
 	if err != nil {
 		t.Fatalf("request to /buildinfo failed: %v", err)
@@ -53,6 +59,9 @@ func TestBuildinfoResponseIsJSON(t *testing.T) {
 
 // TestBuildinfoHasGitSHA [UBOX-S3]
 func TestBuildinfoHasGitSHA(t *testing.T) {
+	if testing.Short() {
+		t.Skip("acceptance test requires a live server")
+	}
 	resp, err := http.Get(fmt.Sprintf("http://%s/buildinfo", getBuildInfoAddr()))
 	if err != nil {
 		t.Fatalf("request to /buildinfo failed: %v", err)
@@ -72,6 +81,9 @@ func TestBuildinfoHasGitSHA(t *testing.T) {
 
 // TestBuildinfoHasBuildID [UBOX-S4]
 func TestBuildinfoHasBuildID(t *testing.T) {
+	if testing.Short() {
+		t.Skip("acceptance test requires a live server")
+	}
 	resp, err := http.Get(fmt.Sprintf("http://%s/buildinfo", getBuildInfoAddr()))
 	if err != nil {
 		t.Fatalf("request to /buildinfo failed: %v", err)
@@ -91,6 +103,9 @@ func TestBuildinfoHasBuildID(t *testing.T) {
 
 // TestBuildinfoHasGoVersion [UBOX-S5]
 func TestBuildinfoHasGoVersion(t *testing.T) {
+	if testing.Short() {
+		t.Skip("acceptance test requires a live server")
+	}
 	resp, err := http.Get(fmt.Sprintf("http://%s/buildinfo", getBuildInfoAddr()))
 	if err != nil {
 		t.Fatalf("request to /buildinfo failed: %v", err)
@@ -110,9 +125,13 @@ func TestBuildinfoHasGoVersion(t *testing.T) {
 
 // TestBuildinfoBuildIDDefaultsToDevWhenEnvUnset [UBOX-S6]
 // When BUILD_ID env is absent the server returns build_id="dev".
+// When BUILD_ID env is absent the server returns build_id="dev".
 // In the docker-compose acceptance stack BUILD_ID is not set, so this confirms
 // the fallback behaviour.
 func TestBuildinfoBuildIDDefaultsToDevWhenEnvUnset(t *testing.T) {
+	if testing.Short() {
+		t.Skip("acceptance test requires a live server")
+	}
 	resp, err := http.Get(fmt.Sprintf("http://%s/buildinfo", getBuildInfoAddr()))
 	if err != nil {
 		t.Fatalf("request to /buildinfo failed: %v", err)
@@ -133,6 +152,9 @@ func TestBuildinfoBuildIDDefaultsToDevWhenEnvUnset(t *testing.T) {
 
 // TestBuildinfoNoAuthentication [UBOX-S7]
 func TestBuildinfoNoAuthentication(t *testing.T) {
+	if testing.Short() {
+		t.Skip("acceptance test requires a live server")
+	}
 	req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("http://%s/buildinfo", getBuildInfoAddr()), nil)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {

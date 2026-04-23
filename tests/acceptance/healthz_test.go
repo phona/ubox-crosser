@@ -18,6 +18,9 @@ type HealthzResponse struct {
 
 // TestHealthzEndpointReturns200OK verifies the endpoint returns 200 OK (FEATURE-A1)
 func TestHealthzEndpointReturns200OK(t *testing.T) {
+	if testing.Short() {
+		t.Skip("acceptance test requires a live server")
+	}
 	resp, err := http.Get(fmt.Sprintf("http://%s/healthz", getHealthCheckAddr()))
 	if err != nil {
 		t.Fatalf("Failed to make request to /healthz: %v", err)
@@ -41,6 +44,9 @@ func TestHealthzEndpointReturns200OK(t *testing.T) {
 
 // TestHealthzEndpointReportsUptime verifies uptime is included in response (FEATURE-A2)
 func TestHealthzEndpointReportsUptime(t *testing.T) {
+	if testing.Short() {
+		t.Skip("acceptance test requires a live server")
+	}
 	resp, err := http.Get(fmt.Sprintf("http://%s/healthz", getHealthCheckAddr()))
 	if err != nil {
 		t.Fatalf("Failed to make request to /healthz: %v", err)
@@ -64,6 +70,9 @@ func TestHealthzEndpointReportsUptime(t *testing.T) {
 
 // TestHealthzUptimeIncreases verifies uptime increases over time (FEATURE-A3)
 func TestHealthzUptimeIncreases(t *testing.T) {
+	if testing.Short() {
+		t.Skip("acceptance test requires a live server")
+	}
 	healthCheckAddr := getHealthCheckAddr()
 
 	resp1, err := http.Get(fmt.Sprintf("http://%s/healthz", healthCheckAddr))
@@ -97,6 +106,9 @@ func TestHealthzUptimeIncreases(t *testing.T) {
 
 // TestHealthzResponseFormat verifies response includes required fields (FEATURE-A5)
 func TestHealthzResponseFormat(t *testing.T) {
+	if testing.Short() {
+		t.Skip("acceptance test requires a live server")
+	}
 	resp, err := http.Get(fmt.Sprintf("http://%s/healthz", getHealthCheckAddr()))
 	if err != nil {
 		t.Fatalf("Failed to make request: %v", err)
@@ -128,6 +140,9 @@ func TestHealthzResponseFormat(t *testing.T) {
 
 // TestHealthzEndpointConcurrent verifies the endpoint handles concurrent requests (FEATURE-A6)
 func TestHealthzEndpointConcurrent(t *testing.T) {
+	if testing.Short() {
+		t.Skip("acceptance test requires a live server")
+	}
 	healthCheckAddr := getHealthCheckAddr()
 	done := make(chan bool, 10)
 	errChan := make(chan error, 10)

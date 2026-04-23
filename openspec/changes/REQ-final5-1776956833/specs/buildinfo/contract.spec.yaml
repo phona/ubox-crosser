@@ -1,0 +1,47 @@
+name: buildinfo
+description: Build information endpoint API contract
+
+api:
+  endpoint: /buildinfo
+  method: GET
+  protocol: HTTP
+  port: inherited from proxy server config
+
+response:
+  status_code: 200
+  content_type: application/json
+  body:
+    type: object
+    required:
+      - git_sha
+      - build_id
+      - go_version
+    properties:
+      git_sha:
+        type: string
+        description: 7-character git commit SHA
+        pattern: '^[0-9a-f]{7}$'
+        example: '1a2b3c4'
+      build_id:
+        type: string
+        description: Build identifier (from BUILD_ID env var or 'dev')
+        example: 'dev'
+        example_with_env: 'build-20240423-001'
+      go_version:
+        type: string
+        description: Go version used to build the binary
+        example: 'go1.23'
+
+error_responses:
+  500:
+    description: Server error (should not happen for healthy server)
+
+security:
+  authentication: none
+  authorization: none
+  rate_limiting: not required
+
+performance:
+  response_time_ms: '<10'
+  cacheable: false
+

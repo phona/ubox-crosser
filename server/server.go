@@ -6,6 +6,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	ss "github.com/shadowsocks/shadowsocks-go/shadowsocks"
 	"net"
+	"net/http"
+	"os"
 	"github.com/phona/ubox-crosser/models/config"
 	"github.com/phona/ubox-crosser/models/errors"
 	"github.com/phona/ubox-crosser/models/message"
@@ -21,6 +23,7 @@ type ProxyServer struct {
 	errs        chan error
 
 	context map[string]config.ServerConfig
+	gitSHA  string
 	// exposers    map[string]*Exposer
 }
 
@@ -33,12 +36,17 @@ func NewProxyServer(configs map[string]config.ServerConfig) *ProxyServer {
 		controllers: make(map[string]*controller, total),
 		errs:        make(chan error, 10),
 		context:     configs,
+		gitSHA:      "unknown",
 	}
 
 	for _, config_ := range configs {
 		go server.initWorker(&listenedAddr, config_)
 	}
 	return server
+}
+
+func (p *ProxyServer) SetGitSHA(sha string) {
+	p.gitSHA = sha
 }
 
 func (p *ProxyServer) initWorker(pListenedAddr *[]string, serverConfig config.ServerConfig) {
@@ -87,6 +95,52 @@ func (p *ProxyServer) Process() {
 		log.Infoln("Received a new connection")
 		go p.handleConnection(conn)
 	}
+}
+
+func (p *ProxyServer) StartHTTPServer() {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/buildinfo", p.buildInfoHandler)
+
+	httpAddr := "127.0.0.1:8080"
+	go func(addr string) {
+		log.Infof("Starting HTTP management server on %s", addr)
+		server := &http.Server{
+			Addr:    addr,
+			Handler: mux,
+		}
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Warnf("HTTP server error: %v", err)
+			p.errs <- err
+		}
+	}(httpAddr)
+}
+
+func (p *ProxyServer) buildInfoHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	type BuildInfo struct {
+		GitSHA    string `json:"git_sha"`
+		BuildID   string `json:"build_id"`
+		GoVersion string `json:"go_version"`
+	}
+
+	buildID := os.Getenv("BUILD_ID")
+	if buildID == "" {
+		buildID = "dev"
+	}
+
+	info := BuildInfo{
+		GitSHA:    p.gitSHA,
+		BuildID:   buildID,
+		GoVersion: "go1.23",
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(info)
 }
 
 func (p *ProxyServer) handleConnection(conn net.Conn) {

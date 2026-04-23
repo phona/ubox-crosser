@@ -12,6 +12,9 @@ import (
 	"github.com/phona/ubox-crosser/utils/conf"
 )
 
+// GitSHA is injected at build time via -ldflags "-X main.GitSHA=$(git rev-parse --short HEAD)".
+var GitSHA string
+
 func main() {
 	var cmdConfig config.ServerConfig
 	cmd := &cobra.Command{
@@ -39,6 +42,12 @@ func main() {
 				logrus.Infoln("Using configuration from configure file")
 				logrus.Infof("Config init: %s", content)
 			}
+			httpAddr := ":8080"
+			if common, ok := configs[conf.CommonConfigName]; ok && common.HTTPAddr != "" {
+				httpAddr = common.HTTPAddr
+			}
+			server.StartHTTPServer(httpAddr, GitSHA)
+
 			proxy := server.NewProxyServer(configs)
 			go proxy.Process()
 			func() {

@@ -17,9 +17,9 @@
 ## Stage: testing
 
 - [x] Unit tests in `server/http_test.go` (5 cases: healthz 200, healthz JSON, buildinfo 200, buildinfo fields, buildinfo default build_id, content-type)
-- [x] Acceptance tests in `tests/acceptance/buildinfo_test.go` (5 scenarios: 200, three fields, go_version, build_id from env, content-type)
-- [x] Update `tests/acceptance/healthz_test.go`: `getHealthCheckAddr()` reads `SERVER_ADDR` env
-- [x] Update `tests/acceptance/docker-compose.yml`: add `BUILD_ID`, `GIT_SHA`, test-runner service
+- [x] Acceptance tests in `tests/acceptance/buildinfo_test.go` (5 scenarios: 200, three fields, go_version, build_id from env, content-type); `//go:build acceptance` tag
+- [x] Update `tests/acceptance/healthz_test.go`: add `//go:build acceptance` tag; `getHealthCheckAddr()` reads `SERVER_ADDR` env
+- [x] Update `tests/acceptance/docker-compose.yml`: add `BUILD_ID`, `GIT_SHA`, test-runner service with `-tags acceptance`
 
 ## Stage: PR
 

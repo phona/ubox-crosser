@@ -31,7 +31,7 @@ services:
       - ../../:/src:ro
     environment:
       - SERVER_ADDR=ubox-crosser:8080
-    command: go test -v -count=1 ./tests/acceptance/...
+    command: go test -v -count=1 -tags acceptance ./tests/acceptance/...
 
 networks:
   test-network:

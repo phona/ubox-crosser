@@ -111,7 +111,7 @@ test-clean:
 # CI Standard Interface
 # ═══════════════════════════════════════════════════
 
-.PHONY: ci-env ci-setup ci-lint ci-unit-test ci-integration-test ci-build ci-test ci-accept-env-up ci-accept-env-down
+.PHONY: ci-env ci-setup ci-lint ci-unit-test ci-integration-test ci-build ci-test ci-accept-env-up ci-accept-env-down ci-accept-test
 
 ci-env:
 	@echo "GO_VERSION=1.23"
@@ -144,4 +144,8 @@ ci-accept-env-up:
 	docker compose -p crosser-accept-$(BUILD_ID) -f tests/acceptance/docker-compose.yml up --build -d
 
 ci-accept-env-down:
+	docker compose -p crosser-accept-$(BUILD_ID) -f tests/acceptance/docker-compose.yml down -v --remove-orphans 2>/dev/null || true
+
+ci-accept-test:
+	docker compose -p crosser-accept-$(BUILD_ID) -f tests/acceptance/docker-compose.yml up --build --exit-code-from test-runner
 	docker compose -p crosser-accept-$(BUILD_ID) -f tests/acceptance/docker-compose.yml down -v --remove-orphans 2>/dev/null || true

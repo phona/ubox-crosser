@@ -1,0 +1,61 @@
+# ═══════════════════════════════════════════════════
+# ubox-crosser /healthz Endpoint Contract Tests
+# ═══════════════════════════════════════════════════
+#
+# This compose file sets up a minimal environment to test
+# the /healthz endpoint contract between client and service.
+#
+# The service-under-test provides the /healthz endpoint on port 8080.
+# The test-runner validates the API contract.
+#
+# Usage:
+#   docker compose -f tests/contract/docker-compose.yml up --build --exit-code-from test-runner
+
+services:
+  # Service under test - provides /healthz endpoint
+  ubox-crosser:
+    build:
+      context: ..
+      dockerfile: Dockerfile.test
+    command: ["server", "--config-file", "/etc/crosser/server.json"]
+    ports:
+      - "8080:8080"  # Health check port (exposed for test-runner)
+    environment:
+      - GOCOVERDIR=/coverage
+      - HEALTH_CHECK_PORT=8080
+    volumes:
+      - ./configs/server.json:/etc/crosser/server.json:ro
+      - coverage-data:/coverage
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/healthz"]
+      interval: 2s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+
+  # Contract test runner
+  test-runner:
+    build:
+      context: ..
+      dockerfile: Dockerfile.test
+    command: >
+      sh -c "
+        echo 'Waiting for service to be ready...' &&
+        sleep 2 &&
+        echo 'Running contract tests...' &&
+        cd /src &&
+        go test -v -count=1 -tags integration -timeout=60s ./tests/contract/...
+      "
+    environment:
+      - HEALTH_CHECK_ADDR=ubox-crosser:8080
+    depends_on:
+      ubox-crosser:
+        condition: service_healthy
+
+volumes:
+  coverage-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${COVERAGE_HOST_DIR:-/tmp/crosser-coverage}

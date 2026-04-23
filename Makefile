@@ -64,7 +64,7 @@ lint:
 # Integration Testing Commands
 # ===========================================
 
-.PHONY: test-integration test-clean test-help sonar
+.PHONY: test-integration test-acceptance test-clean test-help sonar
 
 test-help:
 	@echo "UBox-Crosser Test Commands"
@@ -81,6 +81,15 @@ test-help:
 sonar:
 	@echo "=== Running SonarQube Analysis ==="
 	sonar-scanner -Dproject.settings=sonar-project.properties
+
+test-acceptance:
+	@echo "=== Running Acceptance Tests ==="
+	docker compose -f tests/acceptance/docker-compose.yml up -d --build --wait
+	EXPECTED_BUILD_ID=ci-42 MGMT_ADDR=localhost:8080 \
+		go test -v -tags acceptance -timeout=60s ./tests/acceptance/... ; \
+	EXIT=$$? ; \
+	docker compose -f tests/acceptance/docker-compose.yml down ; \
+	exit $$EXIT
 
 test-integration:
 	@echo "=== Running Integration Tests ==="

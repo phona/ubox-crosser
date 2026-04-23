@@ -4,6 +4,8 @@
 
 ### Requirement: The system SHALL expose GET /buildinfo returning git_sha, build_id, and go_version
 
+The server MUST expose a `GET /buildinfo` HTTP endpoint that responds with HTTP 200 and a JSON body containing the fields `git_sha`, `build_id`, and `go_version`. The endpoint MUST be accessible without authentication. `build_id` reflects the `BUILD_ID` environment variable (defaulting to `"dev"` when absent); `git_sha` is injected at build time via linker flags; `go_version` is always `"go1.23"`.
+
 #### Scenario: UBOX-BINFO-S1 returns 200 with three required JSON fields on bare GET
 - **GIVEN** the server is running (BUILD_ID env may or may not be set)
 - **WHEN** a client sends `GET /buildinfo`

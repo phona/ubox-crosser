@@ -61,7 +61,7 @@ services:
       proxy-server:
         condition: service_healthy
 
-  # Test runner - executes integration tests
+  # Test runner - executes integration and contract tests
   test-runner:
     build:
       context: ..
@@ -72,12 +72,13 @@ services:
         sleep 5 &&
         echo 'Running integration tests...' &&
         cd /src &&
-        go test -v -count=1 -tags integration -timeout=120s ./tests/integration/...
+        go test -v -count=1 -tags integration -timeout=120s ./tests/...
       "
     environment:
       - PROXY_SERVER_ADDR=proxy-server:7000
       - AUTH_SERVER_ADDR=auth-server:7002
       - ECHO_SERVER_ADDR=echo-server:9000
+      - PROXY_HTTP_ADDR=http://proxy-server:8080
       - TEST_CIPHER_KEY=test-secret-key-123
       - TEST_CIPHER_METHOD=chacha20
       - TEST_LOGIN_PASSWORD=test-login-pass

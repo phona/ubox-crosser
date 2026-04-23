@@ -10,6 +10,7 @@ services:
       - "1080:1080"  # SOCKS5 proxy
     environment:
       - LOG_LEVEL=info
+      - BUILD_ID=ci-42
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/healthz"]
       interval: 5s

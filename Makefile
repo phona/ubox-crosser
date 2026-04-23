@@ -10,10 +10,12 @@ BUILD_ID ?= $(shell date +%s)
 
 .PHONY: build clean fmt vet test unit-test unit-test-coverage
 
+GIT_SHA := $(shell git rev-parse --short HEAD 2>/dev/null || echo "dev")
+
 build: $(SOURCES)
 	@echo "=== Building binaries ==="
-	CGO_ENABLED=0 go build -ldflags="-s -w" -o bin/client ./cmd/client
-	CGO_ENABLED=0 go build -ldflags="-s -w" -o bin/server ./cmd/server
+	CGO_ENABLED=0 go build -ldflags="-s -w -X main.GitSHA=$(GIT_SHA)" -o bin/client ./cmd/client
+	CGO_ENABLED=0 go build -ldflags="-s -w -X main.GitSHA=$(GIT_SHA)" -o bin/server ./cmd/server
 	CGO_ENABLED=0 go build -ldflags="-s -w" -o bin/auth_server ./cmd/auth_server
 
 clean:
@@ -62,7 +64,7 @@ lint:
 # Integration Testing Commands
 # ===========================================
 
-.PHONY: test-integration test-clean test-help sonar
+.PHONY: test-integration test-acceptance test-clean test-help sonar
 
 test-help:
 	@echo "UBox-Crosser Test Commands"
@@ -79,6 +81,15 @@ test-help:
 sonar:
 	@echo "=== Running SonarQube Analysis ==="
 	sonar-scanner -Dproject.settings=sonar-project.properties
+
+test-acceptance:
+	@echo "=== Running Acceptance Tests ==="
+	docker compose -f tests/acceptance/docker-compose.yml up -d --build --wait
+	EXPECTED_BUILD_ID=ci-42 MGMT_ADDR=localhost:8080 \
+		go test -v -tags acceptance -timeout=60s ./tests/acceptance/... ; \
+	EXIT=$$? ; \
+	docker compose -f tests/acceptance/docker-compose.yml down ; \
+	exit $$EXIT
 
 test-integration:
 	@echo "=== Running Integration Tests ==="
@@ -109,7 +120,7 @@ test-clean:
 # CI Standard Interface
 # ═══════════════════════════════════════════════════
 
-.PHONY: ci-env ci-setup ci-lint ci-unit-test ci-integration-test ci-build
+.PHONY: ci-env ci-setup ci-lint ci-unit-test ci-integration-test ci-build ci-test dev-cross-check
 
 ci-env:
 	@echo "GO_VERSION=1.23"
@@ -135,3 +146,12 @@ ci-build:
 	docker build -t ubox-crosser-client --build-arg BINARY=client -f Dockerfile .
 	docker build -t ubox-crosser-server --build-arg BINARY=server -f Dockerfile .
 	docker build -t ubox-crosser-auth-server --build-arg BINARY=auth_server -f Dockerfile .
+
+# ci-test: unit tests (staging_test gate)
+ci-test:
+	$(MAKE) ci-unit-test
+
+# dev-cross-check: lint + unit tests (dev_cross_check gate)
+dev-cross-check:
+	$(MAKE) ci-lint
+	$(MAKE) ci-unit-test

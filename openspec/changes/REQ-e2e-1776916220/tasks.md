@@ -3,21 +3,55 @@
 ## Overview
 Implement a `/healthz` HTTP endpoint that returns the current health status and service uptime information to support external health checks and monitoring.
 
-## Implementation Tasks
+## Stage: implementation
 
-### Phase 1: Core Implementation (TBD in dev-impl)
-- [ ] Add HTTP server support to ubox-crosser
-- [ ] Implement `/healthz` endpoint handler
-- [ ] Track service startup time and calculate uptime
-- [ ] Return JSON response with status, uptime_seconds, and timestamp fields
-- [ ] Ensure endpoint doesn't require authentication
-- [ ] Configure health check listening port (default: 8080)
+### Core Implementation
+- [x] Add HTTP server support via `net/http` package
+- [x] Implement `/healthz` endpoint handler in `server/health_server.go`
+- [x] Track service startup time using `time.Now()` at server init
+- [x] Return JSON response with status, uptime_seconds, and timestamp fields
+- [x] Endpoint accessible without authentication
+- [x] Configure health check listening port with default 8080
 
-### Phase 2: Integration
-- [ ] Add configuration for health check port in server config
-- [ ] Ensure `/healthz` endpoint is available immediately after service initialization
-- [ ] Handle concurrent requests to `/healthz` efficiently
-- [ ] Set response time SLA (< 100ms)
+### Integration
+- [x] Add `HealthCheckPort` field to `ServerConfig` in `models/config/config.go`
+- [x] Start health check server in `NewProxyServer()` as goroutine
+- [x] Handle concurrent requests via built-in `net/http` concurrency
+- [x] Response time naturally < 100ms (simple JSON serialization)
+- [x] Add `--health-check-port` CLI flag to `cmd/server/server.go`
+
+### Implementation Details
+**File: `server/health_server.go`**
+- `HealthServer` struct tracks startup time and port
+- `handleHealthz()` calculates uptime as `now.Unix() - startTime.Unix()`
+- Response format: `{status, uptime_seconds, timestamp}` all required per spec
+- Goroutine-safe via `sync.RWMutex`
+
+**File: `models/config/config.go`**
+- Added `HealthCheckPort` field to `ServerConfig`
+
+**File: `cmd/server/server.go`**
+- Added `--health-check-port` flag with default "8080"
+
+**File: `server/server.go`**
+- Added `healthServer` field to `ProxyServer`
+- Launch health server as background goroutine in `NewProxyServer()`
+
+## Implementation Tasks (Reference)
+
+### Phase 1: Core Implementation (COMPLETED)
+- [x] Add HTTP server support to ubox-crosser
+- [x] Implement `/healthz` endpoint handler
+- [x] Track service startup time and calculate uptime
+- [x] Return JSON response with status, uptime_seconds, and timestamp fields
+- [x] Ensure endpoint doesn't require authentication
+- [x] Configure health check listening port (default: 8080)
+
+### Phase 2: Integration (COMPLETED)
+- [x] Add configuration for health check port in server config
+- [x] Ensure `/healthz` endpoint is available immediately after service initialization
+- [x] Handle concurrent requests to `/healthz` efficiently
+- [x] Set response time SLA (< 100ms)
 
 ### Phase 3: Testing (TBD in test)
 - [ ] Unit tests for uptime calculation logic

@@ -1,0 +1,48 @@
+openapi: 3.0.0
+info:
+  title: Build Info API
+  version: 1.0.0
+  description: Endpoint for retrieving build and version information
+
+paths:
+  /buildinfo:
+    get:
+      summary: Get build information
+      description: Returns build information including git SHA, build ID, and Go version
+      operationId: getBuildInfo
+      tags:
+        - system
+      security: []
+      responses:
+        '200':
+          description: Successful response with build information
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - git_sha
+                  - build_id
+                  - go_version
+                properties:
+                  git_sha:
+                    type: string
+                    description: Short Git SHA (7 characters)
+                    minLength: 7
+                    maxLength: 7
+                    pattern: '^[a-f0-9]{7}$'
+                    example: "abc1234"
+                  build_id:
+                    type: string
+                    description: Build ID from BUILD_ID environment variable, or 'dev' if not set
+                    example: "build-12345"
+                  go_version:
+                    type: string
+                    description: Go runtime version
+                    example: "go1.23"
+              examples:
+                success:
+                  value:
+                    git_sha: "abc1234"
+                    build_id: "build-12345"
+                    go_version: "go1.23"

@@ -12,6 +12,8 @@ import (
 	"github.com/phona/ubox-crosser/utils/conf"
 )
 
+var GitSHA string = "unknown"
+
 func main() {
 	var cmdConfig config.ServerConfig
 	cmd := &cobra.Command{
@@ -41,6 +43,16 @@ func main() {
 			}
 			proxy := server.NewProxyServer(configs)
 			go proxy.Process()
+
+			// Start health check HTTP server
+			healthCheckServer := server.NewHealthCheckServer("0.0.0.0:8080", GitSHA)
+			go func() {
+				logrus.Infof("Starting health check server on 0.0.0.0:8080")
+				if err := healthCheckServer.Start(); err != nil {
+					logrus.Errorf("Health check server error: %v", err)
+				}
+			}()
+
 			func() {
 				for {
 					logrus.Errorln(proxy.Err())

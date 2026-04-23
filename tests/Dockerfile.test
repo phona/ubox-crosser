@@ -12,11 +12,14 @@ COPY . .
 
 # Build all binaries with coverage instrumentation
 RUN CGO_ENABLED=0 go build -cover -o /app/client ./cmd/client && \
-    CGO_ENABLED=0 go build -cover -o /app/server ./cmd/server && \
+    CGO_ENABLED=0 go build -cover -ldflags="-X main.GitSHA=$(cd /src && git rev-parse --short HEAD 2>/dev/null || echo unknown)" -o /app/server ./cmd/server && \
     CGO_ENABLED=0 go build -cover -o /app/auth_server ./cmd/auth_server
 
 # Build a tiny TCP healthcheck tool
 RUN printf 'package main\nimport("net";"os";"time")\nfunc main(){c,e:=net.DialTimeout("tcp",os.Args[1],2*time.Second);if e!=nil{os.Exit(1)};c.Close()}\n' > /tmp/healthcheck.go && \
     CGO_ENABLED=0 go build -o /app/healthcheck /tmp/healthcheck.go
+
+# Install curl for HTTP healthchecks
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
 ENV PATH="/app:${PATH}"

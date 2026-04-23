@@ -1,0 +1,57 @@
+# ═══════════════════════════════════════════════════
+# ubox-crosser Contract Test Environment
+# ═══════════════════════════════════════════════════
+#
+# Purpose: Test the /healthz endpoint contract
+# Architecture:
+#   test-runner → proxy-server:8080 (/healthz endpoint)
+#
+# Usage:
+#   docker compose -f tests/docker-compose.contract.yml up --build --exit-code-from contract-test-runner
+
+services:
+  # Central proxy relay with health check endpoint
+  proxy-server:
+    build:
+      context: ..
+      dockerfile: tests/Dockerfile.test
+    command: ["server", "--config-file", "/etc/crosser/server.json"]
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./configs/server.json:/etc/crosser/server.json:ro
+      - coverage-data:/coverage
+    environment:
+      - GOCOVERDIR=/coverage
+    healthcheck:
+      test: ["CMD", "healthcheck", "localhost:7000"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+  # Contract test runner - validates /healthz endpoint contract
+  contract-test-runner:
+    build:
+      context: ..
+      dockerfile: tests/Dockerfile.test
+    command: >
+      sh -c "
+        echo 'Waiting for proxy-server to be ready...' &&
+        sleep 3 &&
+        echo 'Running contract tests for /healthz endpoint...' &&
+        cd /src &&
+        go test -v -count=1 -tags integration -timeout=120s ./tests/contract/...
+      "
+    environment:
+      - BASE_URL=http://proxy-server:8080
+    depends_on:
+      proxy-server:
+        condition: service_healthy
+
+volumes:
+  coverage-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${COVERAGE_HOST_DIR:-/tmp/crosser-coverage}

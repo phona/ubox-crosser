@@ -41,6 +41,18 @@ func main() {
 			}
 			proxy := server.NewProxyServer(configs)
 			go proxy.Process()
+
+			for _, cfg := range configs {
+				if cfg.HealthCheckAddress != "" {
+					healthServer := server.NewHealthCheckServer(cfg.HealthCheckAddress)
+					go func(hs *server.HealthCheckServer) {
+						if err := hs.Start(); err != nil {
+							logrus.Errorf("Health check server error: %v", err)
+						}
+					}(healthServer)
+				}
+			}
+
 			func() {
 				for {
 					logrus.Errorln(proxy.Err())
@@ -79,6 +91,7 @@ func main() {
 	cmd.Flags().StringVar(&cmdConfig.LogFile, "log-file", "", "log file path")
 	cmd.Flags().StringVar(&cmdConfig.LogLevel, "log-level", "debug", "log file path")
 	cmd.Flags().StringVar(&cmdConfig.ConfigFile, "config-file", "", "config file path")
+	cmd.Flags().StringVar(&cmdConfig.HealthCheckAddress, "health-check-address", ":8080", "health check endpoint address")
 	if err := cmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(0)

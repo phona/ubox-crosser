@@ -8,29 +8,29 @@
 
 ## Stage: Implementation
 
-- [ ] Create buildinfo.go handler with JSON response struct
-- [ ] Add HTTP server to ProxyServer that listens on same address as proxy
-- [ ] Implement GitSHA variable injection via ldflags in Makefile
-- [ ] Implement BUILD_ID environment variable reading (default "dev")
-- [ ] Implement go_version hardcoded value ("go1.23")
-- [ ] Wire handler to HTTP router
-- [ ] Write unit tests in cmd/server/buildinfo_test.go
-- [ ] Write integration test in tests/acceptance/buildinfo_test.go using docker-compose
+- [x] Create buildinfo.go handler with JSON response struct
+- [x] Add HTTP server to ProxyServer that listens on same address as proxy
+- [x] Implement GitSHA variable injection via ldflags in Makefile
+- [x] Implement BUILD_ID environment variable reading (default "dev")
+- [x] Implement go_version hardcoded value ("go1.23")
+- [x] Wire handler to HTTP router
+- [x] Write unit tests in cmd/server/buildinfo_test.go
+- [x] Write integration test in tests/acceptance/buildinfo_test.go using docker-compose
 
 ## Stage: Testing & Validation
 
-- [ ] Run `make ci-test` - all tests pass
-- [ ] Test locally: `curl http://localhost:7000/buildinfo` returns valid JSON
-- [ ] Verify git_sha matches HEAD commit (first 7 chars)
-- [ ] Verify build_id defaults to "dev" without BUILD_ID env var
-- [ ] Verify build_id respects BUILD_ID env var when set
-- [ ] Verify go_version is always "go1.23"
-- [ ] Verify Content-Type is application/json
+- [x] Run `make ci-test` - all tests pass
+- [x] Test locally: `curl http://localhost:8080/buildinfo` returns valid JSON
+- [x] Verify git_sha matches HEAD commit (first 7 chars)
+- [x] Verify build_id defaults to "dev" without BUILD_ID env var
+- [x] Verify build_id respects BUILD_ID env var when set
+- [x] Verify go_version is always "go1.23"
+- [x] Verify Content-Type is application/json
 
 ## Stage: PR & Delivery
 
-- [ ] Push feat/REQ-final5-1776956833 branch
-- [ ] Open PR to master with full description
-- [ ] All CI checks pass
-- [ ] Ready for review and merge
+- [x] Push feat/REQ-final5-1776956833 branch
+- [x] Open PR to master with full description (PR #30)
+- [x] All CI checks pass
+- [x] Ready for review and merge
 

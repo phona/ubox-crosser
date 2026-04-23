@@ -110,7 +110,7 @@ test-clean:
 # CI Standard Interface
 # ═══════════════════════════════════════════════════
 
-.PHONY: ci-env ci-setup ci-lint ci-unit-test ci-integration-test ci-build
+.PHONY: ci-env ci-setup ci-lint ci-unit-test ci-integration-test ci-build dev-cross-check
 
 ci-env:
 	@echo "GO_VERSION=1.23"
@@ -136,3 +136,8 @@ ci-build:
 	docker build -t ubox-crosser-client --build-arg BINARY=client -f Dockerfile .
 	docker build -t ubox-crosser-server --build-arg BINARY=server -f Dockerfile .
 	docker build -t ubox-crosser-auth-server --build-arg BINARY=auth_server -f Dockerfile .
+
+dev-cross-check:
+	@echo "=== Dev cross-check: /buildinfo contract ==="
+	go build ./...
+	go test -short -v -count=1 -run "TestBuildInfo" ./server/...

@@ -2,6 +2,11 @@
 
 ### Requirement: The system SHALL expose /buildinfo returning git_sha, build_id, and go_version
 
+The server SHALL provide a `/buildinfo` endpoint over HTTP that returns a JSON object with
+three fields: `git_sha` (7-char git commit SHA injected via ldflags, empty string if not set),
+`build_id` (value of `BUILD_ID` environment variable, defaulting to `"dev"`), and
+`go_version` (hardcoded to `"go1.23"`). The endpoint SHALL require no authentication.
+
 #### Scenario: UBOX-S1 returns 200 with all three fields on bare GET
 - **GIVEN** the server is started (BUILD_ID env may be unset)
 - **WHEN** a client sends GET /buildinfo

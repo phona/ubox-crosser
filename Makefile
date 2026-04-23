@@ -3,6 +3,7 @@ MODULE := github.com/phona/ubox-crosser
 BINARIES := client server auth_server
 COVERAGE_DIR := coverage
 BUILD_ID ?= $(shell date +%s)
+GIT_SHA ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo "dev")
 
 # ===========================================
 # Build Commands
@@ -13,7 +14,7 @@ BUILD_ID ?= $(shell date +%s)
 build: $(SOURCES)
 	@echo "=== Building binaries ==="
 	CGO_ENABLED=0 go build -ldflags="-s -w" -o bin/client ./cmd/client
-	CGO_ENABLED=0 go build -ldflags="-s -w" -o bin/server ./cmd/server
+	CGO_ENABLED=0 go build -ldflags="-s -w -X main.GitSHA=$(GIT_SHA)" -o bin/server ./cmd/server
 	CGO_ENABLED=0 go build -ldflags="-s -w" -o bin/auth_server ./cmd/auth_server
 
 clean:
@@ -109,7 +110,7 @@ test-clean:
 # CI Standard Interface
 # ═══════════════════════════════════════════════════
 
-.PHONY: ci-env ci-setup ci-lint ci-unit-test ci-integration-test ci-build
+.PHONY: ci-env ci-setup ci-lint ci-unit-test ci-integration-test ci-build ci-test dev-cross-check
 
 ci-env:
 	@echo "GO_VERSION=1.23"
@@ -135,3 +136,12 @@ ci-build:
 	docker build -t ubox-crosser-client --build-arg BINARY=client -f Dockerfile .
 	docker build -t ubox-crosser-server --build-arg BINARY=server -f Dockerfile .
 	docker build -t ubox-crosser-auth-server --build-arg BINARY=auth_server -f Dockerfile .
+
+# ci-test: unit tests (staging_test gate)
+ci-test:
+	$(MAKE) ci-unit-test
+
+# dev-cross-check: lint + unit tests (dev_cross_check gate)
+dev-cross-check:
+	$(MAKE) ci-lint
+	$(MAKE) ci-unit-test

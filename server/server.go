@@ -6,6 +6,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	ss "github.com/shadowsocks/shadowsocks-go/shadowsocks"
 	"net"
+	"net/http"
+	"time"
 	"github.com/phona/ubox-crosser/models/config"
 	"github.com/phona/ubox-crosser/models/errors"
 	"github.com/phona/ubox-crosser/models/message"
@@ -20,7 +22,8 @@ type ProxyServer struct {
 	controllers map[string]*controller
 	errs        chan error
 
-	context map[string]config.ServerConfig
+	context     map[string]config.ServerConfig
+	startupTime time.Time
 	// exposers    map[string]*Exposer
 }
 
@@ -33,11 +36,14 @@ func NewProxyServer(configs map[string]config.ServerConfig) *ProxyServer {
 		controllers: make(map[string]*controller, total),
 		errs:        make(chan error, 10),
 		context:     configs,
+		startupTime: time.Now(),
 	}
 
 	for _, config_ := range configs {
 		go server.initWorker(&listenedAddr, config_)
 	}
+
+	server.startHealthCheckServer()
 	return server
 }
 
@@ -170,5 +176,44 @@ func (p *ProxyServer) handleConnErr(coordinator *connector.Coordinator, err erro
 	content, _ := json.Marshal(respMsg)
 	_ = coordinator.SendMsg(string(content))
 	coordinator.Close()
+}
+
+func (p *ProxyServer) startHealthCheckServer() {
+	healthCheckPort := "8080"
+	if commonConfig, ok := p.context["default"]; ok && commonConfig.HealthCheckPort != "" {
+		healthCheckPort = commonConfig.HealthCheckPort
+	}
+
+	http.HandleFunc("/healthz", p.healthzHandler)
+	go func() {
+		if err := http.ListenAndServe(":"+healthCheckPort, nil); err != nil {
+			log.Warnf("Health check server error: %v", err)
+			p.errs <- err
+		}
+	}()
+}
+
+type HealthResponse struct {
+	Status        string `json:"status"`
+	UptimeSeconds int64  `json:"uptime_seconds"`
+	Timestamp     int64  `json:"timestamp"`
+}
+
+func (p *ProxyServer) healthzHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	uptime := int64(time.Since(p.startupTime).Seconds())
+	response := HealthResponse{
+		Status:        "healthy",
+		UptimeSeconds: uptime,
+		Timestamp:     time.Now().Unix(),
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(response)
 }
 

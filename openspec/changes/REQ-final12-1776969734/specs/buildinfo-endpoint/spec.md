@@ -2,8 +2,8 @@
 
 ### Requirement: The system SHALL expose /buildinfo returning git_sha, build_id, and go_version
 
-The `/buildinfo` HTTP endpoint is available on the management server and returns build metadata
-as a JSON object. No authentication is required. The endpoint is served on the same HTTP server
+The `/buildinfo` HTTP endpoint SHALL be available on the management server and SHALL return build metadata
+as a JSON object. No authentication SHALL be required. The endpoint SHALL be served on the same HTTP server
 as `/healthz` (default `:8080`).
 
 #### Scenario: UBOX-S1 returns 200 with all three fields on GET

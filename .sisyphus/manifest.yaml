@@ -1,0 +1,25 @@
+schema_version: 1
+req_id: REQ-e2e-1776916220
+
+sources:
+  - repo: phona/ubox-crosser
+    path: source/ubox-crosser
+    role: leader
+    branch: stage/REQ-e2e-1776916220-dev
+    depends_on: []
+
+test:
+  cmd: "make ci-unit-test ci-integration-test"
+  cwd: "source/ubox-crosser"
+  timeout_sec: 1800
+
+pr:
+  repo: "phona/ubox-crosser"
+
+open_questions: []
+assumptions:
+  - "uptime 计算精度为秒级，满足常见的健康检查需求"
+  - "/healthz 端点仅在 HTTP 请求到达时被触发，服务启动后立即可用"
+out_of_scope:
+  - "不实现 uptime 的持久化存储（服务重启时重置）"
+  - "不改动现有代理业务逻辑或其他端点"

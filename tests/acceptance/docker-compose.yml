@@ -5,35 +5,33 @@ services:
     build:
       context: ../../
       dockerfile: Dockerfile
-    ports:
-      - "8080:8080"  # Health check endpoint
-      - "1080:1080"  # SOCKS5 proxy
+      args:
+        BINARY: server
+        GIT_SHA: ${GIT_SHA:-dev}
     environment:
-      - LOG_LEVEL=info
+      - BUILD_ID=${BUILD_ID:-test-build-001}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/healthz"]
       interval: 5s
       timeout: 3s
-      retries: 3
+      retries: 6
       start_period: 10s
     networks:
       - test-network
 
-  test-client:
-    image: curlimages/curl:latest
+  test-runner:
+    image: golang:1.23
     depends_on:
       ubox-crosser:
         condition: service_healthy
     networks:
       - test-network
-    command:
-      - sh
-      - -c
-      - |
-        echo "Testing /healthz endpoint..."
-        curl -v http://ubox-crosser:8080/healthz
-        echo ""
-        echo "Health check test completed"
+    working_dir: /src
+    volumes:
+      - ../../:/src:ro
+    environment:
+      - SERVER_ADDR=ubox-crosser:8080
+    command: go test -v -count=1 -tags acceptance ./tests/acceptance/...
 
 networks:
   test-network:

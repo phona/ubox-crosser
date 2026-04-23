@@ -1,3 +1,5 @@
+//go:build acceptance
+
 package acceptance
 
 import (
@@ -5,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"testing"
 	"time"
 )
@@ -179,10 +182,11 @@ func TestHealthzEndpointConcurrent(t *testing.T) {
 	}
 }
 
-// getHealthCheckAddr returns the health check endpoint address
-// This should be configured via environment variables or config
+// getHealthCheckAddr returns the server address for HTTP endpoint tests.
+// Set SERVER_ADDR env var to override (e.g. in docker-compose).
 func getHealthCheckAddr() string {
-	addr := "localhost:8080"
-	// In a real scenario, this would be read from config or environment
-	return addr
+	if addr := os.Getenv("SERVER_ADDR"); addr != "" {
+		return addr
+	}
+	return "localhost:8080"
 }

@@ -10,10 +10,12 @@ BUILD_ID ?= $(shell date +%s)
 
 .PHONY: build clean fmt vet test unit-test unit-test-coverage
 
+GIT_SHA := $(shell git rev-parse --short HEAD 2>/dev/null || echo dev)
+
 build: $(SOURCES)
 	@echo "=== Building binaries ==="
 	CGO_ENABLED=0 go build -ldflags="-s -w" -o bin/client ./cmd/client
-	CGO_ENABLED=0 go build -ldflags="-s -w" -o bin/server ./cmd/server
+	CGO_ENABLED=0 go build -ldflags="-s -w -X main.GitSHA=$(GIT_SHA)" -o bin/server ./cmd/server
 	CGO_ENABLED=0 go build -ldflags="-s -w" -o bin/auth_server ./cmd/auth_server
 
 clean:
@@ -109,7 +111,7 @@ test-clean:
 # CI Standard Interface
 # ═══════════════════════════════════════════════════
 
-.PHONY: ci-env ci-setup ci-lint ci-unit-test ci-integration-test ci-build
+.PHONY: ci-env ci-setup ci-lint ci-unit-test ci-integration-test ci-build ci-test ci-accept-env-up ci-accept-env-down ci-accept-test
 
 ci-env:
 	@echo "GO_VERSION=1.23"
@@ -133,5 +135,17 @@ ci-integration-test:
 ci-build:
 	@echo "Building Docker images..."
 	docker build -t ubox-crosser-client --build-arg BINARY=client -f Dockerfile .
-	docker build -t ubox-crosser-server --build-arg BINARY=server -f Dockerfile .
+	docker build -t ubox-crosser-server --build-arg BINARY=server --build-arg GIT_SHA=$(GIT_SHA) -f Dockerfile .
 	docker build -t ubox-crosser-auth-server --build-arg BINARY=auth_server -f Dockerfile .
+
+ci-test: ci-unit-test ci-integration-test
+
+ci-accept-env-up:
+	docker compose -p crosser-accept-$(BUILD_ID) -f tests/acceptance/docker-compose.yml up --build -d
+
+ci-accept-env-down:
+	docker compose -p crosser-accept-$(BUILD_ID) -f tests/acceptance/docker-compose.yml down -v --remove-orphans 2>/dev/null || true
+
+ci-accept-test:
+	docker compose -p crosser-accept-$(BUILD_ID) -f tests/acceptance/docker-compose.yml up --build --exit-code-from test-runner
+	docker compose -p crosser-accept-$(BUILD_ID) -f tests/acceptance/docker-compose.yml down -v --remove-orphans 2>/dev/null || true

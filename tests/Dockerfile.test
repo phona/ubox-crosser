@@ -4,6 +4,8 @@
 
 FROM golang:1.23
 
+ARG GIT_SHA=dev
+
 WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
@@ -12,7 +14,7 @@ COPY . .
 
 # Build all binaries with coverage instrumentation
 RUN CGO_ENABLED=0 go build -cover -o /app/client ./cmd/client && \
-    CGO_ENABLED=0 go build -cover -o /app/server ./cmd/server && \
+    CGO_ENABLED=0 go build -cover -ldflags="-X main.GitSHA=${GIT_SHA}" -o /app/server ./cmd/server && \
     CGO_ENABLED=0 go build -cover -o /app/auth_server ./cmd/auth_server
 
 # Build a tiny TCP healthcheck tool

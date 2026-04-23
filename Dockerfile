@@ -6,14 +6,20 @@
 FROM golang:1.23 AS builder
 
 ARG BINARY=server
+ARG GIT_SHA=dev
 
 WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
-    go build -ldflags="-s -w" -o /app/crosser ./cmd/${BINARY}
+RUN if [ "${BINARY}" = "server" ]; then \
+        CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+        go build -ldflags="-s -w -X main.GitSHA=${GIT_SHA}" -o /app/crosser ./cmd/${BINARY}; \
+    else \
+        CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+        go build -ldflags="-s -w" -o /app/crosser ./cmd/${BINARY}; \
+    fi
 
 # --- Runtime stage ---
 FROM ubuntu:22.04

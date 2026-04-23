@@ -40,6 +40,8 @@ func main() {
 				logrus.Infof("Config init: %s", content)
 			}
 			proxy := server.NewProxyServer(configs)
+			proxy.SetGitSHA(GitSHA)
+			go proxy.StartHTTPServer()
 			go proxy.Process()
 			func() {
 				for {

@@ -16,9 +16,10 @@ import (
 type ProxyServer struct {
 	// generated from client
 
-	dispatcher  *connector.Dispatcher
-	controllers map[string]*controller
-	errs        chan error
+	dispatcher    *connector.Dispatcher
+	controllers   map[string]*controller
+	errs          chan error
+	healthServer  *HealthServer
 
 	context map[string]config.ServerConfig
 	// exposers    map[string]*Exposer
@@ -28,16 +29,35 @@ func NewProxyServer(configs map[string]config.ServerConfig) *ProxyServer {
 	total := len(configs)
 	dispatcher := connector.NewDispatcher(uint64(total))
 	listenedAddr := make([]string, 0, total)
+
+	// Get health check port from first config or use default
+	healthCheckPort := "8080"
+	for _, config_ := range configs {
+		if config_.HealthCheckPort != "" {
+			healthCheckPort = config_.HealthCheckPort
+			break
+		}
+	}
+
 	server := &ProxyServer{
-		dispatcher:  dispatcher,
-		controllers: make(map[string]*controller, total),
-		errs:        make(chan error, 10),
-		context:     configs,
+		dispatcher:   dispatcher,
+		controllers:  make(map[string]*controller, total),
+		errs:         make(chan error, 10),
+		healthServer: NewHealthServer(healthCheckPort),
+		context:      configs,
 	}
 
 	for _, config_ := range configs {
 		go server.initWorker(&listenedAddr, config_)
 	}
+
+	// Start health check server in background
+	go func() {
+		if err := server.healthServer.Start(); err != nil {
+			server.errs <- err
+		}
+	}()
+
 	return server
 }
 

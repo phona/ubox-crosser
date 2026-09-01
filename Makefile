@@ -121,9 +121,30 @@ ci-setup:
 	go mod download
 	@which golangci-lint > /dev/null 2>&1 || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $$(go env GOPATH)/bin v1.62.2
 
-# Code lint (parallel go vet + golangci-lint, BASE_REV for incremental scan)
+# Code + spec lint
+#  - golangci-lint (incremental via BASE_REV, govet built-in)
+#  - scripts/check-scenario-refs.sh: scenario ID 引用完整性全量扫
+#  - scripts/check-my-section-done.sh: AGENT_ROLE 下自检本角色 tasks.md section 全 [x]
+#  - openspec validate: 每个 openspec/changes/* 结构校验
+# pre-commit ACL (scripts/pre-commit-acl.sh, check-tasks-section-ownership.sh)
+# 走 git pre-commit hook，不在 CI 时机。
 ci-lint:
-	@golangci-lint run $${BASE_REV:+--new-from-rev=$$BASE_REV}
+	@fail=0; \
+	golangci-lint run $${BASE_REV:+--new-from-rev=$$BASE_REV} || fail=1; \
+	if [ -f scripts/check-scenario-refs.sh ]; then \
+		bash scripts/check-scenario-refs.sh || fail=1; \
+	fi; \
+	if [ -f scripts/check-my-section-done.sh ]; then \
+		bash scripts/check-my-section-done.sh || fail=1; \
+	fi; \
+	if command -v openspec >/dev/null 2>&1; then \
+		for c in openspec/changes/*/; do \
+			[ -d "$$c" ] || continue; \
+			name=$$(basename $$c); \
+			openspec validate "$$name" || fail=1; \
+		done; \
+	fi; \
+	exit $$fail
 
 ci-unit-test:
 	@mkdir -p $(COVERAGE_DIR)

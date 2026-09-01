@@ -1,0 +1,101 @@
+openapi: "3.0.3"
+info:
+  title: ubox-crosser admin API – webhook-debug
+  version: "1.0.0"
+  description: Contract specification for the /webhook-debug endpoint (REQ-945).
+
+paths:
+  /webhook-debug:
+    get:
+      operationId: webhookDebugGet
+      summary: Echo back full request info (GET)
+      parameters:
+        - name: foo
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: JSON echo of the incoming request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RequestInfo"
+
+    post:
+      operationId: webhookDebugPost
+      summary: Echo back full request info (POST)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: JSON echo of the incoming request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RequestInfo"
+
+    put:
+      operationId: webhookDebugPut
+      summary: Echo back full request info (PUT)
+      requestBody:
+        content:
+          text/plain:
+            schema:
+              type: string
+      responses:
+        "200":
+          description: JSON echo of the incoming request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RequestInfo"
+
+    delete:
+      operationId: webhookDebugDelete
+      summary: Echo back full request info (DELETE)
+      responses:
+        "200":
+          description: JSON echo of the incoming request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RequestInfo"
+
+components:
+  schemas:
+    RequestInfo:
+      type: object
+      required:
+        - method
+        - path
+        - query
+        - headers
+        - body
+      properties:
+        method:
+          type: string
+          description: HTTP method of the incoming request
+        path:
+          type: string
+          description: URL path
+        query:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+          description: Query parameters as key -> []string
+        headers:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+          description: HTTP headers as key -> []string
+        body:
+          type: string
+          description: Raw request body as string
